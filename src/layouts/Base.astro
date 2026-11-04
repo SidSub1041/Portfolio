@@ -1,0 +1,66 @@
+---
+import '@fontsource-variable/schibsted-grotesk';
+import '@fontsource-variable/instrument-sans';
+import '@fontsource-variable/spline-sans-mono';
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import ContactDialog from '../components/ContactDialog.astro';
+import { site, url } from '../site.config';
+import type { ThemeId } from '../data/projects';
+
+interface Props { title: string; description?: string; theme?: ThemeId | 'paper'; ogImage?: string }
+const { title, description = site.description, theme = 'paper', ogImage } = Astro.props;
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : Astro.url.pathname;
+const themeColors: Record<string, string> = { paper: '#f4f5f7', nba: '#171009', draft: '#071f12', kalshi: '#0a0e17', nfl: '#eef2f7', sleeper: '#0b2a5b' };
+const image = ogImage ?? url('/images/og-default.png');
+const ogUrl = Astro.site ? new URL(image, Astro.site).href : image;
+
+/** Page-change animation: the old page lifts and fades, the new one rises in. */
+const pageAnim = {
+  forwards: {
+    old: { name: 'pf-out', duration: '0.2s', easing: 'cubic-bezier(0.4, 0, 1, 1)', fillMode: 'forwards' },
+    new: { name: 'pf-in', duration: '0.4s', easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)', fillMode: 'backwards' },
+  },
+  backwards: {
+    old: { name: 'pf-out', duration: '0.2s', easing: 'cubic-bezier(0.4, 0, 1, 1)', fillMode: 'forwards' },
+    new: { name: 'pf-in', duration: '0.4s', easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)', fillMode: 'backwards' },
+  },
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={url('/favicon.svg')} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={url('/apple-touch-icon.png')} />
+    <meta name="theme-color" content={themeColors[theme] ?? themeColors.paper} />
+    <meta name="author" content={site.name} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogUrl} />
+    <ClientRouter />
+  </head>
+  <body data-theme={theme}>
+    <div class="progress" aria-hidden="true"></div>
+    <Nav />
+    <main id="main" transition:animate={pageAnim}>
+      <slot />
+    </main>
+    <Footer />
+    <ContactDialog />
+    <script src="../scripts/ui.ts"></script>
+  </body>
+</html>

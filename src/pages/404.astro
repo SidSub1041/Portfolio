@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { projects } from '../data/projects';
+import { url } from '../site.config';
+---
+<Base title="Page not found — Sid Subramanian" description="That page does not exist.">
+  <section class="hero" style="min-height:60vh;display:grid;align-items:center">
+    <div class="container">
+      <span class="kicker"><span class="dot"></span> 404</span>
+      <h1>Nothing on this line.</h1>
+      <p class="lead">The page you asked for is not here. The projects are, though.</p>
+      <div class="hero__actions">
+        <a class="btn btn--primary" href={url('/')}>Back home <Icon name="arrow-right" class="arrow" size={16} /></a>
+        {projects.map((p) => <a class="btn btn--ghost btn--sm" href={url(p.href)}><span class="swatch" style={`--swatch:${p.color}`}></span> {p.tab}</a>)}
+      </div>
+    </div>
+  </section>
+</Base>

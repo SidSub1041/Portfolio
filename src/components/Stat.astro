@@ -1,0 +1,13 @@
+---
+/**
+ * A headline number. Pass `count` to animate it from zero when it scrolls into view
+ * (format: int | dec1 | dec2 | pct | units | signed1 | signed2).
+ */
+interface Props { value: string; label: string; sub?: string; count?: number; format?: string; class?: string; tone?: 'pos' | 'neg' | 'accent' }
+const { value, label, sub, count, format = 'int', class: cls = '', tone } = Astro.props;
+---
+<div class:list={['stat', cls]}>
+  <span class="stat__label">{label}</span>
+  <span class:list={['stat__value', tone && `text-${tone}`]} data-count={count} data-format={count !== undefined ? format : undefined}>{value}</span>
+  {sub && <span class="stat__sub">{sub}</span>}
+</div>

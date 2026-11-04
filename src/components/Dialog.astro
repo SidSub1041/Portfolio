@@ -1,0 +1,21 @@
+---
+/**
+ * A pop-up panel. Open it from any element with data-dialog-open="<id>"; close with the
+ * button, Escape, or a click on the backdrop (wired up in scripts/ui.ts).
+ */
+import Icon from './Icon.astro';
+interface Props { id: string; title: string; eyebrow?: string; wide?: boolean; class?: string }
+const { id, title, eyebrow, wide = false, class: cls = '' } = Astro.props;
+---
+<dialog class:list={['dlg', { 'dlg--wide': wide }, cls]} id={id} aria-labelledby={`${id}-title`}>
+  <div class="dlg__card">
+    <div class="dlg__head">
+      <div>
+        {eyebrow && <span class="eyebrow eyebrow--plain">{eyebrow}</span>}
+        <h3 class="dlg__title" id={`${id}-title`}>{title}</h3>
+      </div>
+      <button class="dlg__close" type="button" data-dialog-close aria-label="Close"><Icon name="close" size={16} /></button>
+    </div>
+    <div class="dlg__body prose"><slot /></div>
+  </div>
+</dialog>

@@ -1,0 +1,121 @@
+# Sid Subramanian — portfolio site
+
+A static site that gathers five projects under one roof: a home page with an overview, skills
+and contact pop-up, and one tab per project, each keeping its own design.
+
+| Tab | Route | Source project |
+|---|---|---|
+| Home | `/` | — |
+| NBA Props | `/projects/nba-player-prop-model` | [NBA-Player-Prop-Model](https://github.com/SidSub1041/NBA-Player-Prop-Model) |
+| Draft Copilot | `/projects/draft-copilot` | [ff-draft-bot](https://github.com/SidSub1041/ff-draft-bot) |
+| Kalshi MLB | `/projects/kalshi-mlb-market-analysis` | [kalshi-mlb-market-analysis](https://github.com/SidSub1041/kalshi-mlb-market-analysis) |
+| NFL Totals | `/projects/nfl-game-totals` | [model-game-totals](https://github.com/SidSub1041/model-game-totals) |
+| Sleeper Client | `/projects/sleeper-api-client` | [Fantasy-Football-Draft-Assistant](https://github.com/SidSub1041/Fantasy-Football-Draft-Assistant) |
+
+Built with [Astro](https://astro.build) 7, plain TypeScript and CSS. No UI framework, no
+analytics, no third-party scripts. Fonts are self-hosted (Schibsted Grotesk, Instrument Sans,
+Spline Sans Mono, plus Bebas Neue, Barlow, Anton and Poppins on the tabs that use them). All
+charts are SVG drawn at build time from the data snapshots in `src/data/`.
+
+## Run it
+
+```bash
+npm install
+npm run dev        # http://localhost:4321
+npm run build      # static output in dist/
+npm run preview    # serve dist/ locally
+```
+
+## Make it yours (five minutes)
+
+1. **Headshot.** Save a square photo (at least 800×800) as `public/images/headshot.jpg` and set
+   `headshot: '/images/headshot.jpg'` in `src/site.config.ts`. Until then the home page shows a
+   styled placeholder.
+2. **Contact details.** `src/site.config.ts` holds the name, email, GitHub, Tableau and LinkedIn
+   links shown in the nav, footer and the contact pop-up. The email there is the one found in the
+   project repositories; change it if you want a different public address.
+3. **Contact form.** The form in the pop-up opens the visitor's mail app by default. To receive
+   submissions without exposing an email, create a form endpoint (Formspree, Basin, Netlify
+   Forms, or your own API that accepts JSON) and paste its URL into `contactEndpoint`.
+4. **About text.** The two "About" paragraphs and the "Now" list live in `src/site.config.ts`.
+5. **Project facts and links.** `src/data/projects.ts` is the registry every page reads
+   (names, tab labels, colours, summaries, stack, links). Confirm the two hosted URLs before
+   launch: the Draft Copilot app on Fly.io and the NFL dashboard on Vercel.
+
+## Refresh the project data
+
+Every number on the project tabs comes from JSON snapshots in `src/data/`, generated from the
+project repositories by `scripts/extract_data.py`. With the five repositories checked out next
+to each other:
+
+```bash
+python3 scripts/extract_data.py --root /path/to/the/folder/that/contains/the/repos
+npm run build
+```
+
+The NBA tab also offers a "Refresh from the live repo" button that reads the latest results
+straight from GitHub in the visitor's browser.
+
+## Deploy with your own domain
+
+The build is a folder of static files (`dist/`), so any static host works. Pick one:
+
+### Option A — Vercel (simplest)
+1. Import the repository at vercel.com. Set **Root Directory** to `portfolio` and the framework
+   preset to Astro (`vercel.json` already sets clean URLs and security headers).
+2. Add an environment variable `SITE_URL=https://your-domain.com`.
+3. Project → Settings → Domains → add your domain. Vercel shows the exact DNS records to create
+   at your registrar (an `A` record for the apex and a `CNAME` for `www`). HTTPS is automatic.
+
+### Option B — Netlify
+1. New site from Git; **Base directory** `portfolio`, build command `npm run build`, publish
+   directory `dist` (`netlify.toml` has these).
+2. Site settings → Domain management → add your domain and follow the DNS records shown.
+
+### Option C — GitHub Pages (workflow included)
+1. The workflow `.github/workflows/portfolio-pages.yml` builds `portfolio/` on every push to
+   `main` that touches it. In the repository: Settings → Pages → Source: **GitHub Actions**.
+2. Settings → Secrets and variables → Actions → Variables: `SITE_URL=https://your-domain.com`.
+3. Custom domain: Settings → Pages → Custom domain → your domain, and create
+   `portfolio/public/CNAME` containing just the domain so the file is published with the site.
+   At your registrar, point the apex at GitHub Pages with four `A` records
+   (`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`) and `www` with a
+   `CNAME` to `sidsub1041.github.io`. Tick "Enforce HTTPS" once the certificate is issued.
+
+### Option D — Cloudflare Pages
+Connect the repo, set the root directory to `portfolio`, build command `npm run build`, output
+`dist`, then add the custom domain under the project's Custom domains tab.
+
+### Moving the site into its own repository
+
+The portfolio lives in `portfolio/` of the Kalshi repository only because that is where this
+session could push. To give it a repository of its own (recommended):
+
+```bash
+git subtree split --prefix=portfolio -b portfolio-only
+git push git@github.com:SidSub1041/portfolio.git portfolio-only:main
+```
+
+Then move `.github/workflows/portfolio-pages.yml` into the new repository and drop the
+`portfolio/` prefixes in it (`working-directory`, `cache-dependency-path`, `paths`, artifact
+`path`).
+
+## Structure
+
+```
+src/
+  site.config.ts        personal details, links, headshot, about text
+  data/projects.ts      project registry (nav tabs, cards, project pages)
+  data/skills.ts        skills matrix for the home page
+  data/*.json           data snapshots from the project repositories
+  layouts/Base.astro    html shell, nav, footer, contact pop-up, page transitions
+  components/           shared pieces (Nav, Footer, Dialog, Stat, Icon, SectionHead)
+  components/<page>/    page-specific pieces
+  lib/chart.ts          SVG chart renderer (line, bar, scatter, sparkline)
+  pages/                one file per route
+  scripts/ui.ts         reveals, counters, dialogs, menu, progress bar, contact form
+  styles/global.css     design tokens, per-tab themes, components
+scripts/extract_data.py refreshes src/data/*.json from the repositories
+scripts/screenshot.cjs  screenshots every route (needs a running preview server)
+DESIGN.md               the design system and content brief used to build the pages
+```

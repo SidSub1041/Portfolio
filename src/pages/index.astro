@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+import SectionHead from '../components/SectionHead.astro';
+import Stat from '../components/Stat.astro';
+import Dialog from '../components/Dialog.astro';
+import { site } from '../site.config';
+---
+<Base title={`${site.name} — placeholder`}>
+  <section class="hero"><div class="container">
+    <span class="kicker"><span class="dot"></span> Placeholder home</span>
+    <h1>Foundation smoke test</h1>
+    <p class="lead">This page is replaced by the real home page.</p>
+    <div class="hero__actions"><button class="btn btn--primary" data-dialog-open="info">Open a dialog</button></div>
+  </div></section>
+  <section class="section"><div class="container">
+    <SectionHead eyebrow="Stats" title="Count-up check" />
+    <div class="stat-row"><Stat label="Projects" value="5" count={5} /><Stat label="Units" value="-29.11u" count={-29.11} format="units" /></div>
+  </div></section>
+  <Dialog id="info" title="A pop-up"><p>Dialog works.</p></Dialog>
+</Base>

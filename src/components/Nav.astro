@@ -1,0 +1,49 @@
+---
+import { projects } from '../data/projects';
+import { site, url } from '../site.config';
+import Icon from './Icon.astro';
+const norm = (s: string) => s.replace(/\/+$/, '') || '/';
+const path = norm(Astro.url.pathname);
+const tabs = [
+  { id: 'home', label: 'Home', href: url('/'), color: '' },
+  ...projects.map((p) => ({ id: p.id, label: p.tab, href: url(p.href), color: p.color })),
+];
+const active = (href: string) => norm(href) === path;
+---
+<header class="nav" id="site-nav">
+  <div class="container nav__inner">
+    <a class="brand" href={url('/')} aria-label={`${site.name}, home`}>
+      <span class="brand__mark">{site.initials}</span>
+      <span class="brand__name">{site.name}</span>
+    </a>
+    <nav class="tabs" aria-label="Primary">
+      {tabs.map((t) => (
+        <a class:list={['tab', { 'is-active': active(t.href) }]} href={t.href} aria-current={active(t.href) ? 'page' : undefined}>
+          {t.color && <span class="swatch" style={`--swatch:${t.color}`} aria-hidden="true"></span>}
+          {t.label}
+          {active(t.href) ? <span class="tab__bar" transition:name="tab-indicator" aria-hidden="true"></span> : <span class="tab__bar" aria-hidden="true"></span>}
+        </a>
+      ))}
+    </nav>
+    <div class="nav__actions">
+      <button class="btn btn--primary btn--sm" type="button" data-dialog-open="contact">Contact</button>
+      <button class="nav__menu" type="button" aria-expanded="false" aria-controls="nav-sheet" aria-label="Open menu">
+        <Icon name="menu" class="ico-menu" /><Icon name="close" class="ico-close" />
+      </button>
+    </div>
+  </div>
+  <div class="nav__sheet" id="nav-sheet" data-open="false">
+    <div class="container">
+      {tabs.map((t) => (
+        <a class:list={[{ 'is-active': active(t.href) }]} href={t.href}>
+          {t.color ? <span class="swatch" style={`--swatch:${t.color}`} aria-hidden="true"></span> : <span class="swatch" style="--swatch:var(--accent)" aria-hidden="true"></span>}
+          {t.label}
+        </a>
+      ))}
+      <div class="nav__sheet-foot">
+        <button class="btn btn--primary" type="button" data-dialog-open="contact">Contact me</button>
+        <a class="btn btn--ghost" href={site.github}>GitHub</a>
+      </div>
+    </div>
+  </div>
+</header>

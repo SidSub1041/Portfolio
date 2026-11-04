@@ -1,0 +1,396 @@
+{
+ "snapshotAt": "2026-11-03T19:02:15+00:00",
+ "source": "public/data/*.json in SidSub1041/model-game-totals",
+ "generatedAt": "2026-01-15T13:30:07.582005",
+ "playoffWeekend": "Divisional Round - January 18-19, 2026",
+ "season": null,
+ "trainingSeasons": [
+  2024
+ ],
+ "modelMetrics": {
+  "r2_score": 0.2347,
+  "mae": 8.84,
+  "rmse": 11.45,
+  "training_samples": 272
+ },
+ "summaryStats": {
+  "gamesAnalyzed": 4,
+  "avgEdge": 4.8,
+  "overPicks": 1,
+  "underPicks": 1,
+  "holdPicks": 2,
+  "avgModelTotal": 44.4,
+  "avgVegasTotal": 45.0
+ },
+ "games": [
+  {
+   "homeTeam": "Broncos",
+   "awayTeam": "Bills",
+   "homeAbbr": "DEN",
+   "awayAbbr": "BUF",
+   "gameDate": "Sat, Jan 17",
+   "gameTime": "TBD",
+   "vegasTotal": 45.5,
+   "modelTotal": 50.75948577513918,
+   "homeScore": 22.740619519725442,
+   "awayScore": 28.01886625541374,
+   "edge": 5.259485775139183,
+   "recommendation": "over",
+   "homeOffEpa": 0.014999999664723873,
+   "homeDefEpa": -0.09099999815225601,
+   "awayOffEpa": 0.1899999976158142,
+   "awayDefEpa": 0.008999999612569809
+  },
+  {
+   "homeTeam": "Seahawks",
+   "awayTeam": "49ers",
+   "homeAbbr": "SEA",
+   "awayAbbr": "SF",
+   "gameDate": "Sun, Jan 18",
+   "gameTime": "TBD",
+   "vegasTotal": 45.5,
+   "modelTotal": 47.42842062516138,
+   "homeScore": 22.48737315600738,
+   "awayScore": 24.941047469154,
+   "edge": 1.9284206251613796,
+   "recommendation": "hold",
+   "homeOffEpa": -0.029999999329447746,
+   "homeDefEpa": -0.012000000104308128,
+   "awayOffEpa": 0.0689999982714653,
+   "awayDefEpa": 0.04100000113248825
+  },
+  {
+   "homeTeam": "Patriots",
+   "awayTeam": "Texans",
+   "homeAbbr": "NE",
+   "awayAbbr": "HOU",
+   "gameDate": "Sun, Jan 18",
+   "gameTime": "TBD",
+   "vegasTotal": 40.5,
+   "modelTotal": 43.49995236285031,
+   "homeScore": 21.641407880932093,
+   "awayScore": 21.858544481918216,
+   "edge": 2.9999523628503084,
+   "recommendation": "over",
+   "homeOffEpa": -0.08299999684095383,
+   "homeDefEpa": 0.07000000029802322,
+   "awayOffEpa": -0.04500000178813934,
+   "awayDefEpa": -0.0820000022649765
+  },
+  {
+   "homeTeam": "Bears",
+   "awayTeam": "LA",
+   "homeAbbr": "CHI",
+   "awayAbbr": "LAR",
+   "gameDate": "Sun, Jan 18",
+   "gameTime": "TBD",
+   "vegasTotal": 48.5,
+   "modelTotal": 44.41627394314855,
+   "homeScore": 21.416273943148553,
+   "awayScore": 23.0,
+   "edge": -4.083726056851447,
+   "recommendation": "under",
+   "homeOffEpa": -0.0820000022649765,
+   "homeDefEpa": 0.006000000052154064,
+   "awayOffEpa": 0.009999999776482582,
+   "awayDefEpa": 0.019999999552965164
+  }
+ ],
+ "teams": {
+  "DEN": {
+   "name": "Broncos",
+   "offEpaPlay": 0.0197,
+   "defEpaPlay": 0.0543,
+   "offPassEpa": 39.0,
+   "offRushEpa": -33.8,
+   "defPassEpa": 26.3,
+   "defRushEpa": 62.7,
+   "playsOff": 1446,
+   "playsDef": 1539
+  },
+  "BUF": {
+   "name": "Bills",
+   "offEpaPlay": 0.1396,
+   "defEpaPlay": -0.0076,
+   "offPassEpa": 213.9,
+   "offRushEpa": 25.5,
+   "defPassEpa": -89.4,
+   "defRushEpa": 72.6,
+   "playsOff": 1633,
+   "playsDef": 1592
+  },
+  "SEA": {
+   "name": "Seahawks",
+   "offEpaPlay": -0.0095,
+   "defEpaPlay": 0.0102,
+   "offPassEpa": 28.8,
+   "offRushEpa": -45.6,
+   "defPassEpa": -23.2,
+   "defRushEpa": 43.6,
+   "playsOff": 1401,
+   "playsDef": 1418
+  },
+  "SF": {
+   "name": "49ers",
+   "offEpaPlay": 0.0234,
+   "defEpaPlay": -0.0642,
+   "offPassEpa": 90.3,
+   "offRushEpa": -25.1,
+   "defPassEpa": -51.5,
+   "defRushEpa": -2.8,
+   "playsOff": 1358,
+   "playsDef": 1336
+  },
+  "NE": {
+   "name": "Patriots",
+   "offEpaPlay": -0.0639,
+   "defEpaPlay": -0.0501,
+   "offPassEpa": -11.5,
+   "offRushEpa": -73.8,
+   "defPassEpa": -113.7,
+   "defRushEpa": 21.2,
+   "playsOff": 1380,
+   "playsDef": 1375
+  },
+  "HOU": {
+   "name": "Texans",
+   "offEpaPlay": -0.018,
+   "defEpaPlay": 0.0293,
+   "offPassEpa": 4.0,
+   "offRushEpa": -52.0,
+   "defPassEpa": 17.1,
+   "defRushEpa": 65.6,
+   "playsOff": 1581,
+   "playsDef": 1528
+  },
+  "CHI": {
+   "name": "Bears",
+   "offEpaPlay": -0.0508,
+   "defEpaPlay": -0.0111,
+   "offPassEpa": -29.8,
+   "offRushEpa": -53.7,
+   "defPassEpa": -11.1,
+   "defRushEpa": 12.4,
+   "playsOff": 1427,
+   "playsDef": 1339
+  },
+  "LAR": {
+   "name": "LA",
+   "offEpaPlay": 0.0,
+   "defEpaPlay": 0.0,
+   "offPassEpa": 0.0,
+   "offRushEpa": 0.0,
+   "defPassEpa": 0.0,
+   "defRushEpa": 0.0,
+   "playsOff": 0,
+   "playsDef": 0
+  }
+ },
+ "league": [
+  {
+   "team": "ARI",
+   "offEpaPlay": 0.0625,
+   "defEpaPlay": -0.0493
+  },
+  {
+   "team": "ATL",
+   "offEpaPlay": 0.0113,
+   "defEpaPlay": -0.0437
+  },
+  {
+   "team": "BAL",
+   "offEpaPlay": 0.1422,
+   "defEpaPlay": -0.0161
+  },
+  {
+   "team": "BUF",
+   "offEpaPlay": 0.1396,
+   "defEpaPlay": -0.0076
+  },
+  {
+   "team": "CAR",
+   "offEpaPlay": -0.039,
+   "defEpaPlay": -0.1207
+  },
+  {
+   "team": "CHI",
+   "offEpaPlay": -0.0508,
+   "defEpaPlay": -0.0111
+  },
+  {
+   "team": "CIN",
+   "offEpaPlay": 0.0891,
+   "defEpaPlay": -0.0558
+  },
+  {
+   "team": "CLE",
+   "offEpaPlay": -0.1503,
+   "defEpaPlay": 0.0111
+  },
+  {
+   "team": "DAL",
+   "offEpaPlay": -0.0448,
+   "defEpaPlay": -0.0507
+  },
+  {
+   "team": "DEN",
+   "offEpaPlay": 0.0197,
+   "defEpaPlay": 0.0543
+  },
+  {
+   "team": "DET",
+   "offEpaPlay": 0.1342,
+   "defEpaPlay": 0.0196
+  },
+  {
+   "team": "GB",
+   "offEpaPlay": 0.0576,
+   "defEpaPlay": 0.0381
+  },
+  {
+   "team": "HOU",
+   "offEpaPlay": -0.018,
+   "defEpaPlay": 0.0293
+  },
+  {
+   "team": "IND",
+   "offEpaPlay": -0.0358,
+   "defEpaPlay": -0.0086
+  },
+  {
+   "team": "JAX",
+   "offEpaPlay": 0.0067,
+   "defEpaPlay": -0.0974
+  },
+  {
+   "team": "KC",
+   "offEpaPlay": 0.0473,
+   "defEpaPlay": -0.0106
+  },
+  {
+   "team": "LAC",
+   "offEpaPlay": 0.0175,
+   "defEpaPlay": 0.053
+  },
+  {
+   "team": "LAR",
+   "offEpaPlay": 0.0,
+   "defEpaPlay": 0.0
+  },
+  {
+   "team": "LV",
+   "offEpaPlay": -0.1061,
+   "defEpaPlay": 0.001
+  },
+  {
+   "team": "MIA",
+   "offEpaPlay": -0.0146,
+   "defEpaPlay": 0.0025
+  },
+  {
+   "team": "MIN",
+   "offEpaPlay": 0.0078,
+   "defEpaPlay": 0.0686
+  },
+  {
+   "team": "NE",
+   "offEpaPlay": -0.0639,
+   "defEpaPlay": -0.0501
+  },
+  {
+   "team": "NO",
+   "offEpaPlay": -0.0502,
+   "defEpaPlay": -0.0063
+  },
+  {
+   "team": "NYG",
+   "offEpaPlay": -0.0826,
+   "defEpaPlay": -0.0401
+  },
+  {
+   "team": "NYJ",
+   "offEpaPlay": -0.0043,
+   "defEpaPlay": -0.0481
+  },
+  {
+   "team": "PHI",
+   "offEpaPlay": 0.0854,
+   "defEpaPlay": 0.0713
+  },
+  {
+   "team": "PIT",
+   "offEpaPlay": 0.0093,
+   "defEpaPlay": 0.0113
+  },
+  {
+   "team": "SF",
+   "offEpaPlay": 0.0234,
+   "defEpaPlay": -0.0642
+  },
+  {
+   "team": "SEA",
+   "offEpaPlay": -0.0095,
+   "defEpaPlay": 0.0102
+  },
+  {
+   "team": "TB",
+   "offEpaPlay": 0.102,
+   "defEpaPlay": -0.0128
+  },
+  {
+   "team": "TEN",
+   "offEpaPlay": -0.0892,
+   "defEpaPlay": -0.0375
+  },
+  {
+   "team": "WAS",
+   "offEpaPlay": 0.1145,
+   "defEpaPlay": -0.0584
+  }
+ ],
+ "seasonWeights": {
+  "2024": 0.3,
+  "2025": 0.7
+ },
+ "injuries": {
+  "generatedAt": "2026-01-15T17:13:11.843167",
+  "source": "ESPN Injury Tracker (automated scraping with filtering)",
+  "highImpact": [],
+  "mediumImpact": [],
+  "teams": {
+   "HOU": [],
+   "NE": [],
+   "BUF": [],
+   "DEN": [],
+   "SF": [],
+   "SEA": [],
+   "LAR": [],
+   "CHI": []
+  }
+ },
+ "vegas": {
+  "generatedAt": "2026-01-15T13:45:09.283185",
+  "source": "The-Odds-API",
+  "gamesCount": 4
+ },
+ "scripts": [
+  "01_generate_sample_data.py",
+  "02_build_model.py",
+  "02_enhanced_analysis.py",
+  "03_injury_report.py",
+  "03_project_playoffs.py",
+  "04_analysis_utils.py",
+  "04_enhanced_model.py",
+  "05_historical_model.py",
+  "05_weekly_scheduler.py",
+  "06_team_specific_model.py",
+  "download_team_logos.py",
+  "fetch_nflfastr_data.py",
+  "fetch_vegas_lines.py",
+  "fetch_vegas_lines_advanced.py",
+  "fetch_vegas_lines_scraper.py",
+  "fetch_via_odds_api.py",
+  "nfl_betting_complete.py",
+  "nfl_betting_notebook.py"
+ ]
+}

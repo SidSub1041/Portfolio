@@ -1,0 +1,78 @@
+{
+ "snapshotAt": "2026-11-03T19:02:15+00:00",
+ "source": "src/ in SidSub1041/Fantasy-Football-Draft-Assistant (fork of sdcalmes/sleeper-api)",
+ "groups": {
+  "Draft": [
+   "Draft.DraftImpl",
+   "Draft.DraftModels.Draft",
+   "Draft.DraftModels.DraftMetadata",
+   "Draft.DraftModels.DraftPick",
+   "Draft.DraftModels.DraftPickMetadata",
+   "Draft.DraftModels.DraftSettings",
+   "Draft.DraftModels.footballDraft",
+   "Draft.Drafts"
+  ],
+  "Errors": [
+   "Errors.ErrorUtils",
+   "Errors.SleeperError"
+  ],
+  "League": [
+   "League.League",
+   "League.LeagueImpl",
+   "League.LeagueModels.DraftPickTrade",
+   "League.LeagueModels.LeagueSettings",
+   "League.LeagueModels.LeagueStatus",
+   "League.LeagueModels.Matchup",
+   "League.LeagueModels.Playoffs.PlayoffBracketEntry",
+   "League.LeagueModels.Playoffs.PlayoffBracketTypes",
+   "League.LeagueModels.Roster",
+   "League.LeagueModels.RosterSettings",
+   "League.LeagueModels.ScoringSettings",
+   "League.LeagueModels.Transaction",
+   "League.LeagueModels.TransactionType",
+   "League.LeagueModels.WaiverBudgetTrade",
+   "League.Leagues"
+  ],
+  "(root)": [
+   "Metadata",
+   "Sleeper",
+   "SleeperApi"
+  ],
+  "Other": [
+   "Other.NflLeague",
+   "Other.Sports",
+   "Other.States.SportState",
+   "Other.States.States",
+   "Other.States.StatesImpl"
+  ],
+  "Player": [
+   "Player.DepthChart",
+   "Player.Player",
+   "Player.PlayerImpl",
+   "Player.Players",
+   "Player.Positions"
+  ],
+  "Stats": [
+   "Stats.Stat",
+   "Stats.StatImpl",
+   "Stats.Stats",
+   "Stats.WeeklyPlayerStat"
+  ],
+  "User": [
+   "User.User",
+   "User.Users",
+   "User.UsersImpl"
+  ]
+ },
+ "tests": [
+  "DraftTest",
+  "LeagueTest",
+  "NflLeagueTest",
+  "PlayerTest",
+  "StatTest",
+  "StatesTest",
+  "UserTest"
+ ],
+ "javaLines": 4330,
+ "files": 45
+}

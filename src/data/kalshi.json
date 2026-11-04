@@ -1,0 +1,1893 @@
+{
+ "snapshotAt": "2026-11-03T19:02:15+00:00",
+ "source": "data/*.csv and REPORT.md in SidSub1041/kalshi-mlb-market-analysis",
+ "pilot": {
+  "date": "2026-06-30",
+  "games": 6,
+  "events": 455,
+  "scoringEvents": 46
+ },
+ "summary": [
+  {
+   "group": "home_run",
+   "n": 22,
+   "imm": 7.41,
+   "immMed": 5.5,
+   "drift": 2.36,
+   "volRatio": 4.45,
+   "spread": 1.09,
+   "totImm": 9.68,
+   "immP": 0.001
+  },
+  {
+   "group": "out_in_play",
+   "n": 203,
+   "imm": -1.5,
+   "immMed": -1.0,
+   "drift": 0.3,
+   "volRatio": 1.53,
+   "spread": 1.06,
+   "totImm": -2.28,
+   "immP": 0.0
+  },
+  {
+   "group": "single",
+   "n": 76,
+   "imm": 2.8,
+   "immMed": 1.0,
+   "drift": 1.65,
+   "volRatio": 2.32,
+   "spread": 1.15,
+   "totImm": 4.76,
+   "immP": 0.0
+  },
+  {
+   "group": "strikeout",
+   "n": 98,
+   "imm": -1.53,
+   "immMed": -1.0,
+   "drift": 0.24,
+   "volRatio": 1.44,
+   "spread": 1.11,
+   "totImm": -1.96,
+   "immP": 0.0
+  },
+  {
+   "group": "walk_hbp",
+   "n": 45,
+   "imm": 3.8,
+   "immMed": 1.0,
+   "drift": 1.51,
+   "volRatio": 2.53,
+   "spread": 1.21,
+   "totImm": 5.93,
+   "immP": 0.008
+  },
+  {
+   "group": "xbh",
+   "n": 10,
+   "imm": 1.9,
+   "immMed": 1.0,
+   "drift": -0.7,
+   "volRatio": 1.63,
+   "spread": 1.1,
+   "totImm": 3.3,
+   "immP": 0.088
+  },
+  {
+   "group": "scoring_play",
+   "n": 46,
+   "imm": 7.8,
+   "immMed": 5.0,
+   "drift": 1.48,
+   "volRatio": 6.34,
+   "spread": 1.21,
+   "totImm": 12.35,
+   "immP": null
+  }
+ ],
+ "momentum": {
+  "n": 151,
+  "rho": 0.173,
+  "p": 0.032,
+  "rideCents": 0.96,
+  "fadeCents": -0.96,
+  "points": [
+   {
+    "imm": -3.0,
+    "drift": 22.0,
+    "scoring": false
+   },
+   {
+    "imm": 16.0,
+    "drift": 8.0,
+    "scoring": false
+   },
+   {
+    "imm": 21.0,
+    "drift": 3.0,
+    "scoring": true
+   },
+   {
+    "imm": 6.0,
+    "drift": 17.0,
+    "scoring": true
+   },
+   {
+    "imm": 15.0,
+    "drift": 2.0,
+    "scoring": true
+   },
+   {
+    "imm": 6.0,
+    "drift": -3.0,
+    "scoring": false
+   },
+   {
+    "imm": 3.0,
+    "drift": -0.0,
+    "scoring": false
+   },
+   {
+    "imm": 4.0,
+    "drift": 1.0,
+    "scoring": true
+   },
+   {
+    "imm": -4.0,
+    "drift": -6.0,
+    "scoring": false
+   },
+   {
+    "imm": 7.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": 7.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": 5.0,
+    "drift": 1.0,
+    "scoring": true
+   },
+   {
+    "imm": 3.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": 4.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": 4.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": 3.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": 3.0,
+    "scoring": false
+   },
+   {
+    "imm": 12.0,
+    "drift": 2.0,
+    "scoring": true
+   },
+   {
+    "imm": 7.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": 3.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": -0.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": -2.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 3.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": -6.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": -7.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": -6.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": 5.0,
+    "drift": 1.0,
+    "scoring": true
+   },
+   {
+    "imm": -3.0,
+    "drift": -6.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": -5.0,
+    "scoring": false
+   },
+   {
+    "imm": 6.0,
+    "drift": -3.0,
+    "scoring": true
+   },
+   {
+    "imm": -4.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 12.0,
+    "scoring": false
+   },
+   {
+    "imm": -6.0,
+    "drift": -11.0,
+    "scoring": false
+   },
+   {
+    "imm": -8.0,
+    "drift": -33.0,
+    "scoring": false
+   },
+   {
+    "imm": 6.0,
+    "drift": 41.0,
+    "scoring": false
+   },
+   {
+    "imm": 33.0,
+    "drift": 7.0,
+    "scoring": false
+   },
+   {
+    "imm": 32.0,
+    "drift": 7.0,
+    "scoring": true
+   },
+   {
+    "imm": 22.0,
+    "drift": 1.0,
+    "scoring": true
+   },
+   {
+    "imm": 8.0,
+    "drift": 1.0,
+    "scoring": true
+   },
+   {
+    "imm": 3.0,
+    "drift": 4.0,
+    "scoring": false
+   },
+   {
+    "imm": 7.0,
+    "drift": -4.0,
+    "scoring": false
+   },
+   {
+    "imm": 3.0,
+    "drift": -4.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": -9.0,
+    "drift": 9.0,
+    "scoring": false
+   },
+   {
+    "imm": 5.0,
+    "drift": -10.0,
+    "scoring": false
+   },
+   {
+    "imm": -8.0,
+    "drift": -4.0,
+    "scoring": false
+   },
+   {
+    "imm": -7.0,
+    "drift": -2.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": 8.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": 6.0,
+    "drift": 1.0,
+    "scoring": true
+   },
+   {
+    "imm": 9.0,
+    "drift": 15.0,
+    "scoring": false
+   },
+   {
+    "imm": 24.0,
+    "drift": -1.0,
+    "scoring": true
+   },
+   {
+    "imm": 17.0,
+    "drift": -0.0,
+    "scoring": true
+   },
+   {
+    "imm": -3.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": -7.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": -7.0,
+    "scoring": false
+   },
+   {
+    "imm": -7.0,
+    "drift": -2.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": 0.0,
+    "scoring": false
+   },
+   {
+    "imm": 17.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": 13.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": 45.0,
+    "drift": 1.0,
+    "scoring": true
+   },
+   {
+    "imm": 31.0,
+    "drift": 5.0,
+    "scoring": true
+   },
+   {
+    "imm": -5.0,
+    "drift": 9.0,
+    "scoring": false
+   },
+   {
+    "imm": 9.0,
+    "drift": -3.0,
+    "scoring": false
+   },
+   {
+    "imm": 7.0,
+    "drift": -4.0,
+    "scoring": true
+   },
+   {
+    "imm": -4.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": -2.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": 3.0,
+    "drift": -4.0,
+    "scoring": false
+   },
+   {
+    "imm": -7.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": 7.0,
+    "drift": -1.0,
+    "scoring": true
+   },
+   {
+    "imm": -6.0,
+    "drift": -0.0,
+    "scoring": false
+   },
+   {
+    "imm": -6.0,
+    "drift": -0.0,
+    "scoring": false
+   },
+   {
+    "imm": 9.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": 8.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": 8.0,
+    "drift": -1.0,
+    "scoring": true
+   },
+   {
+    "imm": -7.0,
+    "drift": 9.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": -0.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": 3.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": -6.0,
+    "scoring": false
+   },
+   {
+    "imm": 10.0,
+    "drift": 20.0,
+    "scoring": true
+   },
+   {
+    "imm": 4.0,
+    "drift": 16.0,
+    "scoring": false
+   },
+   {
+    "imm": 16.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": 15.0,
+    "drift": -1.0,
+    "scoring": true
+   },
+   {
+    "imm": -3.0,
+    "drift": -8.0,
+    "scoring": false
+   },
+   {
+    "imm": 3.0,
+    "drift": 10.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 11.0,
+    "scoring": false
+   },
+   {
+    "imm": 8.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": 5.0,
+    "drift": -6.0,
+    "scoring": true
+   },
+   {
+    "imm": -3.0,
+    "drift": -0.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 4.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": -6.0,
+    "scoring": false
+   },
+   {
+    "imm": -9.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": -5.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": -3.0,
+    "scoring": false
+   },
+   {
+    "imm": 3.0,
+    "drift": 8.0,
+    "scoring": false
+   },
+   {
+    "imm": 3.0,
+    "drift": 8.0,
+    "scoring": true
+   },
+   {
+    "imm": 6.0,
+    "drift": -7.0,
+    "scoring": false
+   },
+   {
+    "imm": 4.0,
+    "drift": -9.0,
+    "scoring": false
+   },
+   {
+    "imm": -7.0,
+    "drift": -3.0,
+    "scoring": false
+   },
+   {
+    "imm": 4.0,
+    "drift": 7.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": 8.0,
+    "scoring": true
+   },
+   {
+    "imm": 7.0,
+    "drift": -3.0,
+    "scoring": true
+   },
+   {
+    "imm": -6.0,
+    "drift": -2.0,
+    "scoring": false
+   },
+   {
+    "imm": -8.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": -0.0,
+    "scoring": false
+   },
+   {
+    "imm": -7.0,
+    "drift": -1.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -7.0,
+    "drift": -2.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": 1.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 2.0,
+    "scoring": false
+   },
+   {
+    "imm": -6.0,
+    "drift": 5.0,
+    "scoring": false
+   },
+   {
+    "imm": -6.0,
+    "drift": 5.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": 3.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 6.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": -7.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": -5.0,
+    "scoring": false
+   },
+   {
+    "imm": 6.0,
+    "drift": -4.0,
+    "scoring": false
+   },
+   {
+    "imm": -6.0,
+    "drift": -11.0,
+    "scoring": false
+   },
+   {
+    "imm": -8.0,
+    "drift": 5.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": 4.0,
+    "scoring": false
+   },
+   {
+    "imm": -6.0,
+    "drift": 0.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": -6.0,
+    "scoring": false
+   },
+   {
+    "imm": -4.0,
+    "drift": -12.0,
+    "scoring": false
+   },
+   {
+    "imm": 12.0,
+    "drift": 12.0,
+    "scoring": false
+   },
+   {
+    "imm": 13.0,
+    "drift": 7.0,
+    "scoring": false
+   },
+   {
+    "imm": 10.0,
+    "drift": 4.0,
+    "scoring": true
+   },
+   {
+    "imm": 4.0,
+    "drift": 5.0,
+    "scoring": false
+   },
+   {
+    "imm": 5.0,
+    "drift": 1.0,
+    "scoring": true
+   },
+   {
+    "imm": 4.0,
+    "drift": -2.0,
+    "scoring": true
+   },
+   {
+    "imm": 7.0,
+    "drift": -3.0,
+    "scoring": false
+   },
+   {
+    "imm": -11.0,
+    "drift": -2.0,
+    "scoring": false
+   },
+   {
+    "imm": -5.0,
+    "drift": -3.0,
+    "scoring": false
+   },
+   {
+    "imm": -3.0,
+    "drift": 8.0,
+    "scoring": false
+   },
+   {
+    "imm": 8.0,
+    "drift": 0.0,
+    "scoring": false
+   },
+   {
+    "imm": 7.0,
+    "drift": 0.0,
+    "scoring": true
+   }
+  ]
+ },
+ "asymmetry": {
+  "afterUp": 2.33,
+  "nUp": 63,
+  "afterDown": 0.02,
+  "nDown": 88
+ },
+ "byInning": [
+  {
+   "bucket": "1-3",
+   "n": 161,
+   "meanAbsImm": 4.1
+  },
+  {
+   "bucket": "4-6",
+   "n": 157,
+   "meanAbsImm": 3.17
+  },
+  {
+   "bucket": "7+",
+   "n": 137,
+   "meanAbsImm": 1.2
+  }
+ ],
+ "liquidity": {
+  "medianSpread": 1.0,
+  "medianVol3min": 12502.0,
+  "medianVolRatio": 1.9
+ },
+ "reactionPath": {
+  "minutes": [
+   -3,
+   -2,
+   -1,
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8
+  ],
+  "series": {
+   "home_run": {
+    "n": 22,
+    "mean": [
+     -1.32,
+     0.0,
+     3.36,
+     10.41,
+     10.64,
+     10.77,
+     11.18,
+     11.18,
+     11.64,
+     11.68,
+     13.14,
+     12.82
+    ]
+   },
+   "scoring_play": {
+    "n": 46,
+    "mean": [
+     -0.91,
+     0.0,
+     2.28,
+     8.02,
+     8.98,
+     10.09,
+     10.3,
+     10.3,
+     10.65,
+     10.8,
+     11.57,
+     11.63
+    ]
+   },
+   "single": {
+    "n": 76,
+    "mean": [
+     -0.71,
+     0.0,
+     0.75,
+     3.14,
+     3.47,
+     3.55,
+     3.76,
+     4.16,
+     4.53,
+     4.99,
+     5.2,
+     5.37
+    ]
+   },
+   "walk_hbp": {
+    "n": 45,
+    "mean": [
+     -0.02,
+     0.0,
+     0.24,
+     1.53,
+     2.27,
+     4.04,
+     4.6,
+     4.58,
+     4.18,
+     5.16,
+     5.56,
+     6.27
+    ]
+   },
+   "strikeout": {
+    "n": 98,
+    "mean": [
+     -0.36,
+     0.0,
+     -0.37,
+     -1.65,
+     -1.83,
+     -1.9,
+     -2.21,
+     -2.02,
+     -1.94,
+     -1.8,
+     -1.65,
+     -1.4
+    ]
+   },
+   "out_in_play": {
+    "n": 203,
+    "mean": [
+     -0.05,
+     0.0,
+     0.17,
+     -0.93,
+     -1.11,
+     -1.33,
+     -1.47,
+     -1.36,
+     -1.21,
+     -1.13,
+     -1.04,
+     -1.01
+    ]
+   }
+  }
+ },
+ "gamePath": {
+  "code": "MINHOU",
+  "label": "MIN @ HOU, Jun 30 2026",
+  "side": "HOU",
+  "ticker": "KXMLBGAME-26JUN302010MINHOU-HOU",
+  "series": [
+   {
+    "m": 0,
+    "p": 50.0
+   },
+   {
+    "m": 1,
+    "p": 50.0
+   },
+   {
+    "m": 2,
+    "p": 49.0
+   },
+   {
+    "m": 3,
+    "p": 49.0
+   },
+   {
+    "m": 4,
+    "p": 49.0
+   },
+   {
+    "m": 5,
+    "p": 49.0
+   },
+   {
+    "m": 6,
+    "p": 49.0
+   },
+   {
+    "m": 7,
+    "p": 49.0
+   },
+   {
+    "m": 8,
+    "p": 49.0
+   },
+   {
+    "m": 9,
+    "p": 49.0
+   },
+   {
+    "m": 10,
+    "p": 49.0
+   },
+   {
+    "m": 11,
+    "p": 49.0
+   },
+   {
+    "m": 12,
+    "p": 49.0
+   },
+   {
+    "m": 13,
+    "p": 49.0
+   },
+   {
+    "m": 14,
+    "p": 49.0
+   },
+   {
+    "m": 15,
+    "p": 49.0
+   },
+   {
+    "m": 16,
+    "p": 49.0
+   },
+   {
+    "m": 17,
+    "p": 50.0
+   },
+   {
+    "m": 18,
+    "p": 50.0
+   },
+   {
+    "m": 19,
+    "p": 49.0
+   },
+   {
+    "m": 20,
+    "p": 50.0
+   },
+   {
+    "m": 21,
+    "p": 50.0
+   },
+   {
+    "m": 22,
+    "p": 49.0
+   },
+   {
+    "m": 23,
+    "p": 49.0
+   },
+   {
+    "m": 24,
+    "p": 48.0
+   },
+   {
+    "m": 25,
+    "p": 49.0
+   },
+   {
+    "m": 26,
+    "p": 49.0
+   },
+   {
+    "m": 27,
+    "p": 49.0
+   },
+   {
+    "m": 28,
+    "p": 49.0
+   },
+   {
+    "m": 29,
+    "p": 49.0
+   },
+   {
+    "m": 30,
+    "p": 49.0
+   },
+   {
+    "m": 31,
+    "p": 50.0
+   },
+   {
+    "m": 32,
+    "p": 49.0
+   },
+   {
+    "m": 33,
+    "p": 48.0
+   },
+   {
+    "m": 34,
+    "p": 49.0
+   },
+   {
+    "m": 35,
+    "p": 46.0
+   },
+   {
+    "m": 36,
+    "p": 49.0
+   },
+   {
+    "m": 37,
+    "p": 49.0
+   },
+   {
+    "m": 38,
+    "p": 48.0
+   },
+   {
+    "m": 39,
+    "p": 44.0
+   },
+   {
+    "m": 40,
+    "p": 40.0
+   },
+   {
+    "m": 41,
+    "p": 24.0
+   },
+   {
+    "m": 42,
+    "p": 23.0
+   },
+   {
+    "m": 43,
+    "p": 23.0
+   },
+   {
+    "m": 44,
+    "p": 25.0
+   },
+   {
+    "m": 45,
+    "p": 25.0
+   },
+   {
+    "m": 46,
+    "p": 25.0
+   },
+   {
+    "m": 47,
+    "p": 25.0
+   },
+   {
+    "m": 48,
+    "p": 23.0
+   },
+   {
+    "m": 49,
+    "p": 24.0
+   },
+   {
+    "m": 50,
+    "p": 24.0
+   },
+   {
+    "m": 51,
+    "p": 22.0
+   },
+   {
+    "m": 52,
+    "p": 23.0
+   },
+   {
+    "m": 53,
+    "p": 22.0
+   },
+   {
+    "m": 54,
+    "p": 25.0
+   },
+   {
+    "m": 55,
+    "p": 23.0
+   },
+   {
+    "m": 56,
+    "p": 22.0
+   },
+   {
+    "m": 57,
+    "p": 21.0
+   },
+   {
+    "m": 58,
+    "p": 21.0
+   },
+   {
+    "m": 59,
+    "p": 21.0
+   },
+   {
+    "m": 60,
+    "p": 22.0
+   },
+   {
+    "m": 61,
+    "p": 22.0
+   },
+   {
+    "m": 62,
+    "p": 23.0
+   },
+   {
+    "m": 63,
+    "p": 23.0
+   },
+   {
+    "m": 64,
+    "p": 22.0
+   },
+   {
+    "m": 65,
+    "p": 23.0
+   },
+   {
+    "m": 66,
+    "p": 24.0
+   },
+   {
+    "m": 67,
+    "p": 24.0
+   },
+   {
+    "m": 68,
+    "p": 23.0
+   },
+   {
+    "m": 69,
+    "p": 21.0
+   },
+   {
+    "m": 70,
+    "p": 21.0
+   },
+   {
+    "m": 71,
+    "p": 20.0
+   },
+   {
+    "m": 72,
+    "p": 19.0
+   },
+   {
+    "m": 73,
+    "p": 18.0
+   },
+   {
+    "m": 74,
+    "p": 20.0
+   },
+   {
+    "m": 75,
+    "p": 21.0
+   },
+   {
+    "m": 76,
+    "p": 21.0
+   },
+   {
+    "m": 77,
+    "p": 22.0
+   },
+   {
+    "m": 78,
+    "p": 22.0
+   },
+   {
+    "m": 79,
+    "p": 21.0
+   },
+   {
+    "m": 80,
+    "p": 28.0
+   },
+   {
+    "m": 81,
+    "p": 28.0
+   },
+   {
+    "m": 82,
+    "p": 26.0
+   },
+   {
+    "m": 83,
+    "p": 25.0
+   },
+   {
+    "m": 84,
+    "p": 21.0
+   },
+   {
+    "m": 85,
+    "p": 21.0
+   },
+   {
+    "m": 86,
+    "p": 20.0
+   },
+   {
+    "m": 87,
+    "p": 18.0
+   },
+   {
+    "m": 88,
+    "p": 18.0
+   },
+   {
+    "m": 89,
+    "p": 19.0
+   },
+   {
+    "m": 90,
+    "p": 20.0
+   },
+   {
+    "m": 91,
+    "p": 20.0
+   },
+   {
+    "m": 92,
+    "p": 21.0
+   },
+   {
+    "m": 93,
+    "p": 21.0
+   },
+   {
+    "m": 94,
+    "p": 20.0
+   },
+   {
+    "m": 95,
+    "p": 21.0
+   },
+   {
+    "m": 96,
+    "p": 21.0
+   },
+   {
+    "m": 97,
+    "p": 19.0
+   },
+   {
+    "m": 98,
+    "p": 19.0
+   },
+   {
+    "m": 99,
+    "p": 22.0
+   },
+   {
+    "m": 100,
+    "p": 29.0
+   },
+   {
+    "m": 101,
+    "p": 36.0
+   },
+   {
+    "m": 102,
+    "p": 35.0
+   },
+   {
+    "m": 103,
+    "p": 31.0
+   },
+   {
+    "m": 104,
+    "p": 33.0
+   },
+   {
+    "m": 105,
+    "p": 32.0
+   },
+   {
+    "m": 106,
+    "p": 38.0
+   },
+   {
+    "m": 107,
+    "p": 37.0
+   },
+   {
+    "m": 108,
+    "p": 34.0
+   },
+   {
+    "m": 109,
+    "p": 39.0
+   },
+   {
+    "m": 110,
+    "p": 42.0
+   },
+   {
+    "m": 111,
+    "p": 51.0
+   },
+   {
+    "m": 112,
+    "p": 84.0
+   },
+   {
+    "m": 113,
+    "p": 82.0
+   },
+   {
+    "m": 114,
+    "p": 82.0
+   },
+   {
+    "m": 115,
+    "p": 83.0
+   },
+   {
+    "m": 116,
+    "p": 85.0
+   },
+   {
+    "m": 117,
+    "p": 85.0
+   },
+   {
+    "m": 118,
+    "p": 88.0
+   },
+   {
+    "m": 119,
+    "p": 87.0
+   },
+   {
+    "m": 120,
+    "p": 87.0
+   },
+   {
+    "m": 121,
+    "p": 86.0
+   },
+   {
+    "m": 122,
+    "p": 78.0
+   },
+   {
+    "m": 123,
+    "p": 79.0
+   },
+   {
+    "m": 124,
+    "p": 79.0
+   },
+   {
+    "m": 125,
+    "p": 81.0
+   },
+   {
+    "m": 126,
+    "p": 81.0
+   },
+   {
+    "m": 127,
+    "p": 81.0
+   },
+   {
+    "m": 128,
+    "p": 82.0
+   },
+   {
+    "m": 129,
+    "p": 83.0
+   },
+   {
+    "m": 130,
+    "p": 80.0
+   },
+   {
+    "m": 131,
+    "p": 79.0
+   },
+   {
+    "m": 132,
+    "p": 79.0
+   },
+   {
+    "m": 133,
+    "p": 78.0
+   },
+   {
+    "m": 134,
+    "p": 78.0
+   },
+   {
+    "m": 135,
+    "p": 79.0
+   },
+   {
+    "m": 136,
+    "p": 81.0
+   },
+   {
+    "m": 137,
+    "p": 81.0
+   },
+   {
+    "m": 138,
+    "p": 84.0
+   },
+   {
+    "m": 139,
+    "p": 83.0
+   },
+   {
+    "m": 140,
+    "p": 84.0
+   },
+   {
+    "m": 141,
+    "p": 86.0
+   },
+   {
+    "m": 142,
+    "p": 85.0
+   },
+   {
+    "m": 143,
+    "p": 86.0
+   },
+   {
+    "m": 144,
+    "p": 88.0
+   },
+   {
+    "m": 145,
+    "p": 87.0
+   },
+   {
+    "m": 146,
+    "p": 84.0
+   },
+   {
+    "m": 147,
+    "p": 85.0
+   },
+   {
+    "m": 148,
+    "p": 84.0
+   },
+   {
+    "m": 149,
+    "p": 84.0
+   },
+   {
+    "m": 150,
+    "p": 84.0
+   },
+   {
+    "m": 151,
+    "p": 85.0
+   },
+   {
+    "m": 152,
+    "p": 87.0
+   },
+   {
+    "m": 153,
+    "p": 86.0
+   },
+   {
+    "m": 154,
+    "p": 87.0
+   },
+   {
+    "m": 155,
+    "p": 89.0
+   },
+   {
+    "m": 156,
+    "p": 89.0
+   },
+   {
+    "m": 157,
+    "p": 89.0
+   },
+   {
+    "m": 158,
+    "p": 90.0
+   },
+   {
+    "m": 159,
+    "p": 90.0
+   },
+   {
+    "m": 160,
+    "p": 92.0
+   },
+   {
+    "m": 161,
+    "p": 90.0
+   },
+   {
+    "m": 162,
+    "p": 91.0
+   },
+   {
+    "m": 163,
+    "p": 90.0
+   },
+   {
+    "m": 164,
+    "p": 88.0
+   },
+   {
+    "m": 165,
+    "p": 88.0
+   },
+   {
+    "m": 166,
+    "p": 88.0
+   },
+   {
+    "m": 167,
+    "p": 89.0
+   },
+   {
+    "m": 168,
+    "p": 88.0
+   },
+   {
+    "m": 169,
+    "p": 91.0
+   },
+   {
+    "m": 170,
+    "p": 94.0
+   },
+   {
+    "m": 171,
+    "p": 95.0
+   },
+   {
+    "m": 172,
+    "p": 95.0
+   },
+   {
+    "m": 173,
+    "p": 94.0
+   },
+   {
+    "m": 174,
+    "p": 94.0
+   },
+   {
+    "m": 175,
+    "p": 94.0
+   },
+   {
+    "m": 176,
+    "p": 94.0
+   },
+   {
+    "m": 177,
+    "p": 94.0
+   },
+   {
+    "m": 178,
+    "p": 93.0
+   },
+   {
+    "m": 179,
+    "p": 94.0
+   },
+   {
+    "m": 180,
+    "p": 97.0
+   },
+   {
+    "m": 181,
+    "p": 98.0
+   },
+   {
+    "m": 182,
+    "p": 98.0
+   },
+   {
+    "m": 183,
+    "p": 99.0
+   },
+   {
+    "m": 184,
+    "p": 99.0
+   },
+   {
+    "m": 185,
+    "p": 99.0
+   },
+   {
+    "m": 186,
+    "p": 99.0
+   },
+   {
+    "m": 187,
+    "p": 99.0
+   },
+   {
+    "m": 188,
+    "p": 99.0
+   },
+   {
+    "m": 189,
+    "p": 99.0
+   }
+  ],
+  "scoringPlays": [
+   {
+    "m": 38.9,
+    "inning": 1,
+    "half": "top",
+    "event": "Hit By Pitch",
+    "rbi": 1,
+    "score": "1-0"
+   },
+   {
+    "m": 40.6,
+    "inning": 1,
+    "half": "top",
+    "event": "Single",
+    "rbi": 2,
+    "score": "3-0"
+   },
+   {
+    "m": 100.8,
+    "inning": 4,
+    "half": "bottom",
+    "event": "Single",
+    "rbi": 1,
+    "score": "3-1"
+   },
+   {
+    "m": 109.4,
+    "inning": 4,
+    "half": "bottom",
+    "event": "Walk",
+    "rbi": 1,
+    "score": "3-2"
+   },
+   {
+    "m": 111.4,
+    "inning": 4,
+    "half": "bottom",
+    "event": "Home Run",
+    "rbi": 4,
+    "score": "3-6"
+   },
+   {
+    "m": 121.4,
+    "inning": 5,
+    "half": "top",
+    "event": "Double",
+    "rbi": 1,
+    "score": "4-6"
+   }
+  ]
+ },
+ "games": [
+  {
+   "code": "DETNYY",
+   "away": "DET",
+   "home": "NYY",
+   "mlSide": "DET",
+   "mlResult": "yes",
+   "winner": "DET",
+   "totalLine": "12",
+   "totResult": "yes",
+   "start": "2026-06-30T23:05:00Z",
+   "close": "2026-07-01T01:54:31Z"
+  },
+  {
+   "code": "PITPHI",
+   "away": "PIT",
+   "home": "PHI",
+   "mlSide": "PHI",
+   "mlResult": "yes",
+   "winner": "PHI",
+   "totalLine": "9",
+   "totResult": "no",
+   "start": "2026-06-30T22:40:00Z",
+   "close": "2026-07-01T01:22:33Z"
+  },
+  {
+   "code": "TBKC",
+   "away": "TB",
+   "home": "KC",
+   "mlSide": "TB",
+   "mlResult": "yes",
+   "winner": "TB",
+   "totalLine": "15",
+   "totResult": "no",
+   "start": "2026-06-30T23:40:00Z",
+   "close": "2026-07-01T02:34:25Z"
+  },
+  {
+   "code": "MINHOU",
+   "away": "MIN",
+   "home": "HOU",
+   "mlSide": "HOU",
+   "mlResult": "yes",
+   "winner": "HOU",
+   "totalLine": "9",
+   "totResult": "yes",
+   "start": "2026-07-01T00:10:00Z",
+   "close": "2026-07-01T02:49:33Z"
+  },
+  {
+   "code": "SDCHC",
+   "away": "SD",
+   "home": "CHC",
+   "mlSide": "CHC",
+   "mlResult": "yes",
+   "winner": "CHC",
+   "totalLine": "12",
+   "totResult": "yes",
+   "start": "2026-07-01T00:05:00Z",
+   "close": "2026-07-01T03:19:32Z"
+  },
+  {
+   "code": "LAASEA",
+   "away": "LAA",
+   "home": "SEA",
+   "mlSide": "SEA",
+   "mlResult": "yes",
+   "winner": "SEA",
+   "totalLine": "12",
+   "totResult": "no",
+   "start": "2026-07-01T01:40:00Z",
+   "close": "2026-07-01T04:44:25Z"
+  }
+ ]
+}

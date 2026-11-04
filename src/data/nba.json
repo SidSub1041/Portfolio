@@ -1,0 +1,1073 @@
+{
+ "snapshotAt": "2026-11-03T19:02:15+00:00",
+ "source": "web/public/data/*.csv|json and logs/*.json in SidSub1041/NBA-Player-Prop-Model",
+ "liveData": {
+  "resultsHistory": "https://raw.githubusercontent.com/SidSub1041/NBA-Player-Prop-Model/main/web/public/data/results_history.json",
+  "latest": "https://raw.githubusercontent.com/SidSub1041/NBA-Player-Prop-Model/main/web/public/data/latest.json"
+ },
+ "currentSeason": "2026-27",
+ "seasons": {
+  "2025-26": {
+   "picks": 28,
+   "hits": 15,
+   "misses": 13,
+   "voided": 7,
+   "units": 0.17,
+   "hitRate": 0.5357,
+   "gradedDays": 7,
+   "bestDay": {
+    "date": "2026-04-08",
+    "units": 2.852
+   },
+   "worstDay": {
+    "date": "2026-04-12",
+    "units": -2.212
+   },
+   "first": "2026-04-08",
+   "last": "2026-06-05"
+  },
+  "2026-27": {
+   "picks": 295,
+   "hits": 137,
+   "misses": 158,
+   "voided": 5,
+   "units": -29.28,
+   "hitRate": 0.4644,
+   "gradedDays": 14,
+   "bestDay": {
+    "date": "2026-10-20",
+    "units": 4.0
+   },
+   "worstDay": {
+    "date": "2026-10-26",
+    "units": -12.279
+   },
+   "first": "2026-10-20",
+   "last": "2026-11-02"
+  }
+ },
+ "allTime": {
+  "picks": 323,
+  "hits": 152,
+  "misses": 171,
+  "voided": 12,
+  "units": -29.11,
+  "hitRate": 0.4706,
+  "gradedDays": 21,
+  "bestDay": {
+   "date": "2026-10-20",
+   "units": 4.0
+  },
+  "worstDay": {
+   "date": "2026-10-26",
+   "units": -12.279
+  },
+  "first": "2026-04-08",
+  "last": "2026-11-02"
+ },
+ "daily": [
+  {
+   "date": "2026-04-08",
+   "season": "2025-26",
+   "picks": 7,
+   "hits": 5,
+   "misses": 2,
+   "voided": 1,
+   "units": 2.852,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-04-09",
+   "season": "2025-26",
+   "picks": 4,
+   "hits": 2,
+   "misses": 2,
+   "voided": 3,
+   "units": -0.408,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-04-12",
+   "season": "2025-26",
+   "picks": 8,
+   "hits": 3,
+   "misses": 5,
+   "voided": 3,
+   "units": -2.212,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-04-15",
+   "season": "2025-26",
+   "picks": 0,
+   "hits": 0,
+   "misses": 0,
+   "voided": 0,
+   "units": 0.0,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-04-22",
+   "season": "2025-26",
+   "picks": 1,
+   "hits": 0,
+   "misses": 1,
+   "voided": 0,
+   "units": -1.0,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-05-08",
+   "season": "2025-26",
+   "picks": 5,
+   "hits": 2,
+   "misses": 3,
+   "voided": 0,
+   "units": -1.057,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-05-26",
+   "season": "2025-26",
+   "picks": 1,
+   "hits": 1,
+   "misses": 0,
+   "voided": 0,
+   "units": 0.629,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-06-05",
+   "season": "2025-26",
+   "picks": 2,
+   "hits": 2,
+   "misses": 0,
+   "voided": 0,
+   "units": 1.368,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-10-20",
+   "season": "2026-27",
+   "picks": 12,
+   "hits": 8,
+   "misses": 4,
+   "voided": 0,
+   "units": 4.0,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-10-21",
+   "season": "2026-27",
+   "picks": 34,
+   "hits": 13,
+   "misses": 21,
+   "voided": 2,
+   "units": -7.453,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-10-22",
+   "season": "2026-27",
+   "picks": 5,
+   "hits": 2,
+   "misses": 3,
+   "voided": 0,
+   "units": -0.57,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-10-23",
+   "season": "2026-27",
+   "picks": 53,
+   "hits": 28,
+   "misses": 25,
+   "voided": 0,
+   "units": -0.704,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-10-24",
+   "season": "2026-27",
+   "picks": 32,
+   "hits": 18,
+   "misses": 14,
+   "voided": 0,
+   "units": 3.737,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-10-25",
+   "season": "2026-27",
+   "picks": 30,
+   "hits": 14,
+   "misses": 16,
+   "voided": 1,
+   "units": -3.746,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-10-26",
+   "season": "2026-27",
+   "picks": 38,
+   "hits": 14,
+   "misses": 24,
+   "voided": 0,
+   "units": -12.279,
+   "clvAvgLine": null,
+   "clvBeat": null
+  },
+  {
+   "date": "2026-10-27",
+   "season": "2026-27",
+   "picks": 12,
+   "hits": 5,
+   "misses": 7,
+   "voided": 0,
+   "units": -1.978,
+   "clvAvgLine": -0.167,
+   "clvBeat": 0.333
+  },
+  {
+   "date": "2026-10-28",
+   "season": "2026-27",
+   "picks": 15,
+   "hits": 5,
+   "misses": 10,
+   "voided": 0,
+   "units": -5.988,
+   "clvAvgLine": -0.067,
+   "clvBeat": 0.333
+  },
+  {
+   "date": "2026-10-29",
+   "season": "2026-27",
+   "picks": 9,
+   "hits": 2,
+   "misses": 7,
+   "voided": 0,
+   "units": -4.138,
+   "clvAvgLine": -0.556,
+   "clvBeat": 0.333
+  },
+  {
+   "date": "2026-10-30",
+   "season": "2026-27",
+   "picks": 13,
+   "hits": 5,
+   "misses": 8,
+   "voided": 2,
+   "units": -3.748,
+   "clvAvgLine": 0.462,
+   "clvBeat": 0.385
+  },
+  {
+   "date": "2026-10-31",
+   "season": "2026-27",
+   "picks": 15,
+   "hits": 8,
+   "misses": 7,
+   "voided": 0,
+   "units": 1.223,
+   "clvAvgLine": 0.2,
+   "clvBeat": 0.467
+  },
+  {
+   "date": "2026-11-01",
+   "season": "2026-27",
+   "picks": 12,
+   "hits": 6,
+   "misses": 6,
+   "voided": 0,
+   "units": -0.817,
+   "clvAvgLine": -2.0,
+   "clvBeat": 0.0
+  },
+  {
+   "date": "2026-11-02",
+   "season": "2026-27",
+   "picks": 15,
+   "hits": 9,
+   "misses": 6,
+   "voided": 0,
+   "units": 3.182,
+   "clvAvgLine": -0.833,
+   "clvBeat": 0.0
+  }
+ ],
+ "cumulative": {
+  "2025-26": [
+   {
+    "date": "2026-04-08",
+    "units": 2.852,
+    "cum": 2.85,
+    "picks": 7,
+    "hits": 5
+   },
+   {
+    "date": "2026-04-09",
+    "units": -0.408,
+    "cum": 2.44,
+    "picks": 4,
+    "hits": 2
+   },
+   {
+    "date": "2026-04-12",
+    "units": -2.212,
+    "cum": 0.23,
+    "picks": 8,
+    "hits": 3
+   },
+   {
+    "date": "2026-04-15",
+    "units": 0.0,
+    "cum": 0.23,
+    "picks": 0,
+    "hits": 0
+   },
+   {
+    "date": "2026-04-22",
+    "units": -1.0,
+    "cum": -0.77,
+    "picks": 1,
+    "hits": 0
+   },
+   {
+    "date": "2026-05-08",
+    "units": -1.057,
+    "cum": -1.83,
+    "picks": 5,
+    "hits": 2
+   },
+   {
+    "date": "2026-05-26",
+    "units": 0.629,
+    "cum": -1.2,
+    "picks": 1,
+    "hits": 1
+   },
+   {
+    "date": "2026-06-05",
+    "units": 1.368,
+    "cum": 0.17,
+    "picks": 2,
+    "hits": 2
+   }
+  ],
+  "2026-27": [
+   {
+    "date": "2026-10-20",
+    "units": 4.0,
+    "cum": 4.0,
+    "picks": 12,
+    "hits": 8
+   },
+   {
+    "date": "2026-10-21",
+    "units": -7.453,
+    "cum": -3.45,
+    "picks": 34,
+    "hits": 13
+   },
+   {
+    "date": "2026-10-22",
+    "units": -0.57,
+    "cum": -4.02,
+    "picks": 5,
+    "hits": 2
+   },
+   {
+    "date": "2026-10-23",
+    "units": -0.704,
+    "cum": -4.73,
+    "picks": 53,
+    "hits": 28
+   },
+   {
+    "date": "2026-10-24",
+    "units": 3.737,
+    "cum": -0.99,
+    "picks": 32,
+    "hits": 18
+   },
+   {
+    "date": "2026-10-25",
+    "units": -3.746,
+    "cum": -4.74,
+    "picks": 30,
+    "hits": 14
+   },
+   {
+    "date": "2026-10-26",
+    "units": -12.279,
+    "cum": -17.02,
+    "picks": 38,
+    "hits": 14
+   },
+   {
+    "date": "2026-10-27",
+    "units": -1.978,
+    "cum": -18.99,
+    "picks": 12,
+    "hits": 5
+   },
+   {
+    "date": "2026-10-28",
+    "units": -5.988,
+    "cum": -24.98,
+    "picks": 15,
+    "hits": 5
+   },
+   {
+    "date": "2026-10-29",
+    "units": -4.138,
+    "cum": -29.12,
+    "picks": 9,
+    "hits": 2
+   },
+   {
+    "date": "2026-10-30",
+    "units": -3.748,
+    "cum": -32.87,
+    "picks": 13,
+    "hits": 5
+   },
+   {
+    "date": "2026-10-31",
+    "units": 1.223,
+    "cum": -31.64,
+    "picks": 15,
+    "hits": 8
+   },
+   {
+    "date": "2026-11-01",
+    "units": -0.817,
+    "cum": -32.46,
+    "picks": 12,
+    "hits": 6
+   },
+   {
+    "date": "2026-11-02",
+    "units": 3.182,
+    "cum": -29.28,
+    "picks": 15,
+    "hits": 9
+   }
+  ]
+ },
+ "gradedRows": 323,
+ "byStat": [
+  {
+   "key": "assists",
+   "n": 105,
+   "hits": 48,
+   "hitRate": 0.457,
+   "units": -12.33
+  },
+  {
+   "key": "rebounds",
+   "n": 89,
+   "hits": 44,
+   "hitRate": 0.494,
+   "units": -4.15
+  },
+  {
+   "key": "points",
+   "n": 66,
+   "hits": 29,
+   "hitRate": 0.439,
+   "units": -10.11
+  },
+  {
+   "key": "reb+ast",
+   "n": 24,
+   "hits": 12,
+   "hitRate": 0.5,
+   "units": -0.3
+  },
+  {
+   "key": "pts+reb",
+   "n": 21,
+   "hits": 9,
+   "hitRate": 0.429,
+   "units": -3.44
+  },
+  {
+   "key": "pts+ast",
+   "n": 14,
+   "hits": 8,
+   "hitRate": 0.571,
+   "units": 1.48
+  },
+  {
+   "key": "pra",
+   "n": 4,
+   "hits": 2,
+   "hitRate": 0.5,
+   "units": -0.25
+  }
+ ],
+ "byGrade": [
+  {
+   "key": "A+",
+   "n": 212,
+   "hits": 99,
+   "hitRate": 0.467,
+   "units": -21.99
+  },
+  {
+   "key": "A",
+   "n": 111,
+   "hits": 53,
+   "hitRate": 0.477,
+   "units": -7.11
+  }
+ ],
+ "bySide": [
+  {
+   "key": "over",
+   "n": 194,
+   "hits": 88,
+   "hitRate": 0.454,
+   "units": -17.45
+  },
+  {
+   "key": "under",
+   "n": 129,
+   "hits": 64,
+   "hitRate": 0.496,
+   "units": -11.65
+  }
+ ],
+ "lastBoard": {
+  "date": "2026-11-02",
+  "picks": 15,
+  "hits": 9,
+  "misses": 6,
+  "voided": 0,
+  "units": 3.18,
+  "clv": {
+   "n": 6,
+   "unverified": 9,
+   "avg_line": -0.833,
+   "beat_close": 0.0,
+   "pushed_close": 0.667,
+   "avg_prob": -0.0276
+  },
+  "rows": [
+   {
+    "player": "De'Aaron Fox",
+    "team": "SAS",
+    "opp": "UTA",
+    "pos": "PG",
+    "stat": "points",
+    "side": "over",
+    "line": 18.5,
+    "price": "+210",
+    "book": "Bovada",
+    "actual": 12,
+    "result": "miss",
+    "grade": "A+",
+    "units": -1.0,
+    "pHit": 0.152,
+    "projMu": 21.9,
+    "closingLine": null,
+    "clvLine": null,
+    "hitrate": 0.458,
+    "seasonAvg": 18.6
+   },
+   {
+    "player": "Walker Kessler",
+    "team": "LAL",
+    "opp": "MIA",
+    "pos": "C",
+    "stat": "assists",
+    "side": "over",
+    "line": 1.5,
+    "price": "+161",
+    "book": "BetOnline.ag",
+    "actual": 2,
+    "result": "hit",
+    "grade": "A+",
+    "units": 1.61,
+    "pHit": 0.206,
+    "projMu": 2.6,
+    "closingLine": null,
+    "clvLine": null,
+    "hitrate": 0.8,
+    "seasonAvg": 3.0
+   },
+   {
+    "player": "Jaylen Brown",
+    "team": "PHI",
+    "opp": "CHI",
+    "pos": "SF",
+    "stat": "points",
+    "side": "over",
+    "line": 21.5,
+    "price": "-113",
+    "book": "FanDuel",
+    "actual": 25,
+    "result": "hit",
+    "grade": "A+",
+    "units": 0.89,
+    "pHit": 0.318,
+    "projMu": 29.8,
+    "closingLine": 21.5,
+    "clvLine": 0.0,
+    "hitrate": 0.859,
+    "seasonAvg": 28.7
+   },
+   {
+    "player": "Keaton Wagler",
+    "team": "LAC",
+    "opp": "TOR",
+    "pos": "G",
+    "stat": "assists",
+    "side": "under",
+    "line": 3.5,
+    "price": "+110",
+    "book": "BetRivers",
+    "actual": 4,
+    "result": "miss",
+    "grade": "A+",
+    "units": -1.0,
+    "pHit": 0.386,
+    "projMu": 2.3,
+    "closingLine": null,
+    "clvLine": null,
+    "hitrate": null,
+    "seasonAvg": null
+   },
+   {
+    "player": "Deni Avdija",
+    "team": "POR",
+    "opp": "DEN",
+    "pos": "SF",
+    "stat": "points",
+    "side": "over",
+    "line": 21.5,
+    "price": "-120",
+    "book": "BetRivers",
+    "actual": 28,
+    "result": "hit",
+    "grade": "A+",
+    "units": 0.83,
+    "pHit": 0.455,
+    "projMu": 27.4,
+    "closingLine": null,
+    "clvLine": null,
+    "hitrate": 0.667,
+    "seasonAvg": 24.2
+   },
+   {
+    "player": "Tyrese Maxey",
+    "team": "PHI",
+    "opp": "CHI",
+    "pos": "PG",
+    "stat": "points",
+    "side": "over",
+    "line": 26.5,
+    "price": "+100",
+    "book": "Bovada",
+    "actual": 26,
+    "result": "miss",
+    "grade": "A+",
+    "units": -1.0,
+    "pHit": 0.387,
+    "projMu": 32.4,
+    "closingLine": 26.5,
+    "clvLine": 0.0,
+    "hitrate": 0.614,
+    "seasonAvg": 28.3
+   },
+   {
+    "player": "Jarace Walker",
+    "team": "IND",
+    "opp": "ATL",
+    "pos": "PF",
+    "stat": "assists",
+    "side": "under",
+    "line": 3.5,
+    "price": "+120",
+    "book": "BetMGM",
+    "actual": 3,
+    "result": "hit",
+    "grade": "A+",
+    "units": 1.2,
+    "pHit": 0.424,
+    "projMu": 2.6,
+    "closingLine": 3.5,
+    "clvLine": 0.0,
+    "hitrate": 0.724,
+    "seasonAvg": 2.5
+   },
+   {
+    "player": "Darius Garland",
+    "team": "LAC",
+    "opp": "TOR",
+    "pos": "PG",
+    "stat": "points",
+    "side": "under",
+    "line": 23.5,
+    "price": "-117",
+    "book": "DraftKings",
+    "actual": 16,
+    "result": "hit",
+    "grade": "A+",
+    "units": 0.85,
+    "pHit": 0.47,
+    "projMu": 18.4,
+    "closingLine": null,
+    "clvLine": null,
+    "hitrate": 0.8,
+    "seasonAvg": 18.8
+   },
+   {
+    "player": "Coby White",
+    "team": "CHA",
+    "opp": "DET",
+    "pos": "G",
+    "stat": "assists",
+    "side": "over",
+    "line": 2.5,
+    "price": "+115",
+    "book": "Fanatics",
+    "actual": 3,
+    "result": "hit",
+    "grade": "A+",
+    "units": 1.15,
+    "pHit": 0.412,
+    "projMu": 3.7,
+    "closingLine": 2.5,
+    "clvLine": 0.0,
+    "hitrate": 0.72,
+    "seasonAvg": 4.0
+   },
+   {
+    "player": "Bilal Coulibaly",
+    "team": "WAS",
+    "opp": "ORL",
+    "pos": "SG",
+    "stat": "points",
+    "side": "over",
+    "line": 9.5,
+    "price": "+175",
+    "book": "Bovada",
+    "actual": 7,
+    "result": "miss",
+    "grade": "A+",
+    "units": -1.0,
+    "pHit": 0.235,
+    "projMu": 10.5,
+    "closingLine": 7.5,
+    "clvLine": -2.0,
+    "hitrate": 0.643,
+    "seasonAvg": 11.7
+   },
+   {
+    "player": "Jaylen Brown",
+    "team": "PHI",
+    "opp": "CHI",
+    "pos": "SF",
+    "stat": "pts+ast",
+    "side": "over",
+    "line": 25.5,
+    "price": "-118",
+    "book": "BetRivers",
+    "actual": 30,
+    "result": "hit",
+    "grade": "A+",
+    "units": 0.85,
+    "pHit": 0.408,
+    "projMu": 34.6,
+    "closingLine": null,
+    "clvLine": null,
+    "hitrate": 0.873,
+    "seasonAvg": 33.8
+   },
+   {
+    "player": "De'Aaron Fox",
+    "team": "SAS",
+    "opp": "UTA",
+    "pos": "PG",
+    "stat": "pts+ast",
+    "side": "over",
+    "line": 21.5,
+    "price": "-105",
+    "book": "DraftKings",
+    "actual": 15,
+    "result": "miss",
+    "grade": "A+",
+    "units": -1.0,
+    "pHit": 0.455,
+    "projMu": 29.5,
+    "closingLine": null,
+    "clvLine": null,
+    "hitrate": 0.597,
+    "seasonAvg": 24.7
+   },
+   {
+    "player": "Jarace Walker",
+    "team": "IND",
+    "opp": "ATL",
+    "pos": "PF",
+    "stat": "pts+ast",
+    "side": "under",
+    "line": 19.5,
+    "price": "-104",
+    "book": "DraftKings",
+    "actual": 18,
+    "result": "hit",
+    "grade": "A+",
+    "units": 0.96,
+    "pHit": 0.534,
+    "projMu": 14.0,
+    "closingLine": 22.5,
+    "clvLine": -3.0,
+    "hitrate": 0.763,
+    "seasonAvg": 14.2
+   },
+   {
+    "player": "Darius Garland",
+    "team": "LAC",
+    "opp": "TOR",
+    "pos": "PG",
+    "stat": "pra",
+    "side": "under",
+    "line": 33.5,
+    "price": "-119",
+    "book": "DraftKings",
+    "actual": 28,
+    "result": "hit",
+    "grade": "A+",
+    "units": 0.84,
+    "pHit": 0.577,
+    "projMu": 26.0,
+    "closingLine": null,
+    "clvLine": null,
+    "hitrate": 0.8,
+    "seasonAvg": 27.8
+   },
+   {
+    "player": "Noah Clowney",
+    "team": "BKN",
+    "opp": "NYK",
+    "pos": "C",
+    "stat": "pts+reb",
+    "side": "over",
+    "line": 10.5,
+    "price": "+110",
+    "book": "Bovada",
+    "actual": 8,
+    "result": "miss",
+    "grade": "A+",
+    "units": -1.0,
+    "pHit": 0.504,
+    "projMu": 14.0,
+    "closingLine": null,
+    "clvLine": null,
+    "hitrate": 0.758,
+    "seasonAvg": 16.4
+   }
+  ]
+ },
+ "learner": {
+  "features": [
+   "hr_line",
+   "hr_line_missing",
+   "cushion",
+   "cushion_missing",
+   "implied",
+   "implied_missing",
+   "pass_rate",
+   "log_conditions",
+   "is_over",
+   "from_books",
+   "log_books",
+   "injured",
+   "log_gp",
+   "stat_rebounds",
+   "stat_assists",
+   "stat_pra",
+   "stat_combo2",
+   "p_model",
+   "p_model_missing",
+   "p_market",
+   "p_market_missing",
+   "edge",
+   "line_move",
+   "dvp_z",
+   "matchup_z",
+   "log_minutes",
+   "weight_this"
+  ],
+  "nRows": 2979,
+  "nDays": 41,
+  "mode": "shadow",
+  "trusted": false,
+  "trainedAt": "2026-11-03T17:14:44Z",
+  "passStreak": 0,
+  "failStreak": 13
+ },
+ "latest": {
+  "date": "2026-11-04",
+  "runAtIso": "2026-11-03T09:57:53+00:00",
+  "modelVersion": "edge-1",
+  "thresholds": {
+   "condition_pass_rate": 0.8,
+   "condition_pass_rate_points": 0.6,
+   "hitrate": 0.56,
+   "min_edge": 0.03,
+   "strong_edge": 0.06,
+   "max_price": -121,
+   "min_books": 3,
+   "min_line": 4.0,
+   "min_proj_minutes": 24.0,
+   "max_picks": 15,
+   "max_per_game": 3
+  },
+  "caps": {
+   "max_picks": 15,
+   "max_per_game": 3,
+   "max_per_player": 1
+  },
+  "validCount": 0,
+  "candidates": 3
+ },
+ "postmortem": {
+  "date": "2026-11-02",
+  "allProps": {
+   "hits": 309,
+   "misses": 298,
+   "rate": 0.509,
+   "n": 607,
+   "ci": [
+    0.469,
+    0.549
+   ]
+  },
+  "scope": "segments cover every prop with a line that night, not only the published picks",
+  "wentRight": [
+   {
+    "segment": "season average vs line: n/a",
+    "hits": 23,
+    "misses": 13,
+    "rate": 0.639,
+    "n": 36,
+    "ci": [
+     0.476,
+     0.775
+    ]
+   },
+   {
+    "segment": "hit rate vs line: no line-based hit rate",
+    "hits": 23,
+    "misses": 13,
+    "rate": 0.639,
+    "n": 36,
+    "ci": [
+     0.476,
+     0.775
+    ]
+   },
+   {
+    "segment": "price band: \u2212121 or worse",
+    "hits": 103,
+    "misses": 60,
+    "rate": 0.632,
+    "n": 163,
+    "ci": [
+     0.556,
+     0.702
+    ]
+   }
+  ],
+  "wentWrong": [
+   {
+    "segment": "stat: pts+reb",
+    "hits": 13,
+    "misses": 19,
+    "rate": 0.406,
+    "n": 32,
+    "ci": [
+     0.255,
+     0.577
+    ]
+   },
+   {
+    "segment": "stat: reb+ast",
+    "hits": 11,
+    "misses": 16,
+    "rate": 0.407,
+    "n": 27,
+    "ci": [
+     0.245,
+     0.593
+    ]
+   },
+   {
+    "segment": "hit rate vs line: <50%",
+    "hits": 46,
+    "misses": 66,
+    "rate": 0.411,
+    "n": 112,
+    "ci": [
+     0.324,
+     0.503
+    ]
+   }
+  ],
+  "biggestMisses": [
+   {
+    "player": "De'Aaron Fox",
+    "stat": "points",
+    "edge": "over",
+    "line": 18.5,
+    "actual": 12.0
+   },
+   {
+    "player": "De'Aaron Fox",
+    "stat": "pts+ast",
+    "edge": "over",
+    "line": 21.5,
+    "actual": 15.0
+   },
+   {
+    "player": "Bilal Coulibaly",
+    "stat": "points",
+    "edge": "over",
+    "line": 9.5,
+    "actual": 7.0
+   },
+   {
+    "player": "Noah Clowney",
+    "stat": "pts+reb",
+    "edge": "over",
+    "line": 10.5,
+    "actual": 8.0
+   },
+   {
+    "player": "Keaton Wagler",
+    "stat": "assists",
+    "edge": "under",
+    "line": 3.5,
+    "actual": 4.0
+   }
+  ]
+ }
+}

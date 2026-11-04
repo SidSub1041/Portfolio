@@ -1,0 +1,25 @@
+---
+import { site } from '../site.config';
+import Icon from './Icon.astro';
+import Dialog from './Dialog.astro';
+---
+<Dialog id="contact" title="Let's talk" eyebrow="Contact">
+  <p>Analytics or engineering roles, collaboration on a model, or a question about one of the projects: send a note and I will reply.</p>
+  <div class="contact-links" style="margin-top:18px">
+    <a class="contact-link" href={`mailto:${site.email}`}><Icon name="mail" /><div><b>Email</b><span>{site.email}</span></div></a>
+    <a class="contact-link" href={site.github}><Icon name="github" /><div><b>GitHub</b><span>github.com/{site.githubHandle}</span></div></a>
+    <a class="contact-link" href={site.tableau}><Icon name="bar-chart" /><div><b>Tableau Public</b><span>Interactive dashboards</span></div></a>
+    {site.linkedin && <a class="contact-link" href={site.linkedin}><Icon name="linkedin" /><div><b>LinkedIn</b><span>{site.linkedin.replace(/^https?:\/\//, '')}</span></div></a>}
+  </div>
+  <form class="form" id="contact-form" data-endpoint={site.contactEndpoint} data-email={site.email} novalidate>
+    <div class="form__row">
+      <div class="field"><label for="cf-name">Name</label><input id="cf-name" name="name" type="text" autocomplete="name" required /></div>
+      <div class="field"><label for="cf-email">Your email</label><input id="cf-email" name="email" type="email" autocomplete="email" required /></div>
+    </div>
+    <div class="field"><label for="cf-message">Message</label><textarea id="cf-message" name="message" required></textarea></div>
+    <div class="between">
+      <p class="form__status" aria-live="polite"></p>
+      <button class="btn btn--primary" type="submit"><Icon name="send" size={16} /> Send message</button>
+    </div>
+  </form>
+</Dialog>

@@ -1,0 +1,35 @@
+---
+import { projects } from '../data/projects';
+import { site, url } from '../site.config';
+const year = new Date().getFullYear();
+---
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div>
+        <a class="brand" href={url('/')}><span class="brand__mark">{site.initials}</span><span class="brand__name">{site.name}</span></a>
+        <p style="margin-top:14px;max-width:38ch">{site.role}.</p>
+        <p class="small muted" style="margin-top:10px">Every number on this site comes from the project repositories. Model results are published as they happen, wins and losses alike.</p>
+      </div>
+      <div>
+        <h4>Projects</h4>
+        <ul role="list">
+          {projects.map((p) => <li><a href={url(p.href)}>{p.name}</a></li>)}
+        </ul>
+      </div>
+      <div>
+        <h4>Elsewhere</h4>
+        <ul role="list">
+          <li><a href={site.github}>GitHub</a></li>
+          <li><a href={site.tableau}>Tableau Public</a></li>
+          {site.linkedin && <li><a href={site.linkedin}>LinkedIn</a></li>}
+          <li><button class="link" type="button" data-dialog-open="contact" style="cursor:pointer">Contact</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© {year} {site.name}</span>
+      <span>Not affiliated with the NBA, NFL, MLB, Kalshi, Sleeper, Yahoo or ESPN. Team and platform names are used only to describe the work.</span>
+    </div>
+  </div>
+</footer>
