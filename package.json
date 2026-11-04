@@ -6,10 +6,11 @@
   "description": "Portfolio site for Sid Subramanian: sports analytics, prediction markets, and the software that runs them.",
   "scripts": {
     "dev": "astro dev",
+    "prebuild": "node scripts/make-og.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "data": "python3 scripts/extract_data.py"
+    "data": "python3 scripts/extract_data.py --assets"
   },
   "dependencies": {
     "@fontsource-variable/instrument-sans": "^5.3.0",

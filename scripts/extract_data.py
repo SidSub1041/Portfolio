@@ -436,12 +436,44 @@ def extract_sleeper(root: Path) -> None:
     })
 
 
+ASSETS = {
+    # destination under public/images/projects/  <-  source inside the sibling checkout
+    "draft-copilot-cockpit.jpg": "ff-draft-bot/site/assets/cockpit.jpg",
+    "draft-copilot-panel.png": "ff-draft-bot/site/assets/panel-full.png",
+    "draft-copilot-sidebar.png": "ff-draft-bot/site/assets/panel-sidebar.png",
+    "draft-copilot-mobile.jpg": "ff-draft-bot/site/assets/mobile.jpg",
+    "stadium-cc0.jpg": "ff-draft-bot/site/assets/stadium.jpg",
+    "turf-cc0.jpg": "ff-draft-bot/site/assets/turf.jpg",
+    "kalshi-reaction-analysis.png": "kalshi-mlb-market-analysis/reaction_analysis.png",
+}
+
+
+def copy_assets(root: Path) -> None:
+    """Copy the real screenshots and CC0 photos the project tabs show from the sibling checkouts."""
+    import shutil
+    dest = HERE.parent / "public" / "images" / "projects"
+    dest.mkdir(parents=True, exist_ok=True)
+    for name, rel in ASSETS.items():
+        src = root / rel
+        if not src.exists():
+            warn(f"asset missing: {src}")
+            continue
+        shutil.copyfile(src, dest / name)
+        print(f"copied {rel} -> public/images/projects/{name}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=str(HERE.parent.parent.parent), help="directory containing the project checkouts")
+    ap.add_argument("--assets", action="store_true", help="also copy the screenshots and photos the tabs use from the checkouts")
+    ap.add_argument("--assets-only", action="store_true", help="only copy the assets, do not rebuild the JSON snapshots")
     args = ap.parse_args()
     root = Path(args.root).resolve()
     print(f"reading project checkouts under {root}")
+    if args.assets or args.assets_only:
+        copy_assets(root)
+    if args.assets_only:
+        return
     for fn in (extract_nba, extract_kalshi, extract_nfl, extract_draft, extract_sleeper):
         try:
             fn(root)
