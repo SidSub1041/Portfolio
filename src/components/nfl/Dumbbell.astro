@@ -1,0 +1,54 @@
+---
+/**
+ * Model vs Vegas totals per game as a dumbbell chart: a blue dot for the Vegas line, a
+ * purple dot for the model, a link coloured by direction, and a translucent band showing
+ * the recommendation threshold around the line (the band and the call text are re-drawn by
+ * src/scripts/nfl-totals.ts when the visitor moves the threshold slider).
+ * Built on the chart module's CSS hooks (.ch, .ch-grid, .ch-tick) so it inherits the theme.
+ */
+import type { Game } from './GameCard.astro';
+interface Props { games: Game[]; threshold?: number }
+const { games, threshold = 2 } = Astro.props;
+
+const W = 720, padL = 132, padR = 84, padT = 34, padB = 42, rowH = 76;
+const H = padT + rowH * games.length + padB;
+const x0 = 38, x1 = 54;
+const iw = W - padL - padR;
+const ppp = iw / (x1 - x0); // pixels per point
+const sx = (v: number) => +(padL + (v - x0) * ppp).toFixed(2);
+const ticks = Array.from({ length: (x1 - x0) / 2 + 1 }, (_, i) => x0 + i * 2);
+const minus = (s: string) => s.replace('-', '−');
+const signed = (v: number) => minus(`${v > 0 ? '+' : ''}${v.toFixed(1)}`);
+const rec = (edge: number, t: number) => (edge > t ? 'over' : edge < -t ? 'under' : 'hold');
+const label = games.map((g) => `${g.awayAbbr} at ${g.homeAbbr}: Vegas ${g.vegasTotal.toFixed(1)}, model ${g.modelTotal.toFixed(1)}, edge ${signed(g.edge)}`).join('; ');
+---
+<svg class="ch nfl-db draw" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Model versus Vegas totals for the four Divisional Round games. ${label}.`} preserveAspectRatio="xMidYMid meet" data-ppp={ppp.toFixed(4)}>
+  {ticks.map((t) => (
+    <>
+      <line class="ch-grid" pathLength="1" x1={sx(t)} x2={sx(t)} y1={padT - 8} y2={H - padB + 4} />
+      <text class="ch-tick" x={sx(t)} y={H - padB + 20} text-anchor="middle" font-size="11">{t}</text>
+    </>
+  ))}
+  <text class="ch-label" x={padL + iw / 2} y={H - 6} text-anchor="middle" font-size="11">Total points</text>
+  {games.map((g, i) => {
+    const y = padT + i * rowH + rowH / 2;
+    const vx = sx(g.vegasTotal), mx = sx(g.modelTotal);
+    const r = rec(g.edge, threshold);
+    const sign = g.edge > 0 ? 'pos' : 'neg';
+    return (
+      <g class="nfl-db__row" data-edge={g.edge.toFixed(4)} data-vegas-x={vx} data-rec={r}>
+        <text class="nfl-db__label" x={padL - 18} y={y - 2} text-anchor="end" font-size="13">{g.awayAbbr} @ {g.homeAbbr}</text>
+        <text class="nfl-db__sub" x={padL - 18} y={y + 14} text-anchor="end" font-size="10.5">{g.gameDate}</text>
+        <rect class="nfl-db__band" x={(vx - threshold * ppp).toFixed(2)} y={y - 17} width={(2 * threshold * ppp).toFixed(2)} height="34" rx="17" />
+        <line class="nfl-db__track" pathLength="1" x1={padL} x2={W - padR} y1={y} y2={y} />
+        <line class={`nfl-db__link nfl-db__link--${sign}`} pathLength="1" x1={vx} x2={mx} y1={y} y2={y} />
+        <circle class="nfl-db__vegas" cx={vx} cy={y} r="8" />
+        <circle class="nfl-db__model" cx={mx} cy={y} r="8" />
+        <text class="nfl-db__val nfl-db__val--vegas" x={vx} y={y - 15} text-anchor="middle" font-size="11">{g.vegasTotal.toFixed(1)}</text>
+        <text class="nfl-db__val nfl-db__val--model" x={mx} y={y + 26} text-anchor="middle" font-size="11">{g.modelTotal.toFixed(1)}</text>
+        <text class={`nfl-db__edge nfl-db__edge--${sign}`} x={W - padR + 16} y={y - 3} font-size="14">{signed(g.edge)}</text>
+        <text class="nfl-db__rec" data-rec={r} x={W - padR + 16} y={y + 14} font-size="10">{r.toUpperCase()}</text>
+      </g>
+    );
+  })}
+</svg>

@@ -1,0 +1,98 @@
+---
+/**
+ * Offensive vs defensive EPA per play for the eight playoff teams, over the whole league
+ * as faint dots. Drawn here rather than with lib/chart.ts scatterChart because each playoff
+ * point needs a hit area, a <title> and data attributes for the hover readout; the axis
+ * ticks come from the module's niceTicks and the styling hooks are the module's (.ch).
+ */
+import { niceTicks } from '../../lib/chart';
+import TeamMark from './TeamMark.astro';
+
+interface Team { name: string; offEpaPlay: number; defEpaPlay: number; offPassEpa: number; offRushEpa: number; defPassEpa: number; defRushEpa: number; playsOff: number; playsDef: number }
+interface LeagueRow { team: string; offEpaPlay: number; defEpaPlay: number }
+interface Props { teams: Record<string, Team>; league: LeagueRow[] }
+const { teams, league } = Astro.props;
+
+const W = 720, H = 440, pad = { t: 26, r: 24, b: 50, l: 58 };
+const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+const xs = league.map((d) => d.offEpaPlay), ys = league.map((d) => d.defEpaPlay);
+const grow = (lo: number, hi: number, f = 0.14) => { const p = (hi - lo) * f; return [lo - p, hi + p] as [number, number]; };
+const [x0, x1] = grow(Math.min(...xs), Math.max(...xs));
+const [y0, y1] = grow(Math.min(...ys), Math.max(...ys));
+const sx = (x: number) => +(pad.l + ((x - x0) / (x1 - x0)) * iw).toFixed(2);
+const sy = (y: number) => +(pad.t + ih - ((y - y0) / (y1 - y0)) * ih).toFixed(2);
+const xt = niceTicks(x0, x1, 6).filter((v) => v >= x0 && v <= x1);
+const yt = niceTicks(y0, y1, 5).filter((v) => v >= y0 && v <= y1);
+const fmt = (v: number, d = 3) => `${v > 0 ? '+' : ''}${v.toFixed(d)}`.replace('-', '−');
+const fmtTick = (v: number) => (Math.abs(v) < 1e-9 ? '0' : fmt(v, 2));
+
+// Playoff teams with data in the snapshot. LAR is stored as all zeros with 0 plays, so it is
+// listed as missing instead of being drawn at the origin as if it were a real measurement.
+const playoff = Object.entries(teams).filter(([, t]) => t.playsOff > 0);
+const missing = Object.entries(teams).filter(([, t]) => t.playsOff === 0).map(([abbr]) => abbr);
+const playoffSet = new Set(playoff.map(([a]) => a));
+// Label offsets chosen by hand so that neighbouring teams (SEA, HOU) do not collide.
+const offsets: Record<string, { dx: number; dy: number; anchor: 'start' | 'end' }> = {
+  BUF: { dx: 11, dy: -9, anchor: 'start' }, DEN: { dx: 11, dy: -9, anchor: 'start' }, SF: { dx: 11, dy: 16, anchor: 'start' },
+  SEA: { dx: 11, dy: 16, anchor: 'start' }, HOU: { dx: -11, dy: -9, anchor: 'end' }, NE: { dx: -11, dy: 16, anchor: 'end' }, CHI: { dx: -11, dy: 16, anchor: 'end' },
+};
+const aria = `Offensive versus defensive EPA per play. Playoff teams: ${playoff.map(([a, t]) => `${a} ${fmt(t.offEpaPlay)} offence, ${fmt(t.defEpaPlay)} defence`).join('; ')}. The other ${league.length - playoff.length} teams are shown as faint dots.`;
+---
+<div class="nfl-sc">
+  <svg class="ch nfl-sc__svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={aria} preserveAspectRatio="xMidYMid meet">
+    {yt.map((v) => (
+      <>
+        <line class="ch-grid" x1={pad.l} x2={W - pad.r} y1={sy(v)} y2={sy(v)} />
+        <text class="ch-tick" x={pad.l - 8} y={sy(v) + 4} text-anchor="end" font-size="11">{fmtTick(v)}</text>
+      </>
+    ))}
+    {xt.map((v) => (
+      <>
+        <line class="ch-grid" y1={pad.t} y2={pad.t + ih} x1={sx(v)} x2={sx(v)} />
+        <text class="ch-tick" x={sx(v)} y={pad.t + ih + 18} text-anchor="middle" font-size="11">{fmtTick(v)}</text>
+      </>
+    ))}
+    <line class="ch-zero" x1={sx(0)} x2={sx(0)} y1={pad.t} y2={pad.t + ih} />
+    <line class="ch-zero" x1={pad.l} x2={W - pad.r} y1={sy(0)} y2={sy(0)} />
+    <g class="nfl-sc__quad" font-size="10">
+      <text x={W - pad.r - 6} y={pad.t + ih - 8} text-anchor="end">Strong offence, strong defence</text>
+      <text x={pad.l + 6} y={pad.t + ih - 8} text-anchor="start">Weak offence, strong defence</text>
+      <text x={W - pad.r - 6} y={pad.t + 14} text-anchor="end">Strong offence, weak defence</text>
+      <text x={pad.l + 6} y={pad.t + 14} text-anchor="start">Weak offence, weak defence</text>
+    </g>
+    <g class="nfl-sc__league">
+      {league.filter((d) => !playoffSet.has(d.team) && !missing.includes(d.team)).map((d) => (
+        <circle cx={sx(d.offEpaPlay)} cy={sy(d.defEpaPlay)} r="3.5"><title>{d.team}: offence {fmt(d.offEpaPlay)}, defence {fmt(d.defEpaPlay)} EPA per play</title></circle>
+      ))}
+    </g>
+    <g class="nfl-sc__playoff">
+      {playoff.map(([abbr, t]) => {
+        const o = offsets[abbr] ?? { dx: 11, dy: -9, anchor: 'start' as const };
+        return (
+          <g class={`nfl-pt nfl-pt--${abbr}`} tabindex="0" role="img" aria-label={`${t.name} (${abbr}): offence ${fmt(t.offEpaPlay)}, defence ${fmt(t.defEpaPlay)} EPA per play`}
+            data-abbr={abbr} data-name={t.name} data-off={t.offEpaPlay} data-def={t.defEpaPlay} data-off-pass={t.offPassEpa} data-off-rush={t.offRushEpa} data-def-pass={t.defPassEpa} data-def-rush={t.defRushEpa} data-plays-off={t.playsOff} data-plays-def={t.playsDef}>
+            <title>{t.name}: offence {fmt(t.offEpaPlay)}, defence {fmt(t.defEpaPlay)} EPA per play</title>
+            <circle class="nfl-pt__hit" cx={sx(t.offEpaPlay)} cy={sy(t.defEpaPlay)} r="16" />
+            <circle class="nfl-pt__dot" cx={sx(t.offEpaPlay)} cy={sy(t.defEpaPlay)} r="7" />
+            <text class="nfl-pt__label" x={sx(t.offEpaPlay) + o.dx} y={sy(t.defEpaPlay) + o.dy} text-anchor={o.anchor} font-size="12">{abbr}</text>
+          </g>
+        );
+      })}
+    </g>
+    <text class="ch-label" transform={`translate(14 ${pad.t + ih / 2}) rotate(-90)`} text-anchor="middle" font-size="11">Defensive EPA per play allowed (lower is better)</text>
+    <text class="ch-label" x={pad.l + iw / 2} y={H - 6} text-anchor="middle" font-size="11">Offensive EPA per play (higher is better)</text>
+  </svg>
+
+  <div class="nfl-sc__foot">
+    <div class="nfl-readout" id="nfl-readout" aria-live="polite">
+      <span class="nfl-readout__hint">Hover or focus a labelled team for its split.</span>
+    </div>
+    <div class="nfl-sc__legend legend">
+      <span class="legend__item"><span class="legend__swatch legend__swatch--dot" style="--c: var(--accent)"></span> Playoff team</span>
+      <span class="legend__item"><span class="legend__swatch legend__swatch--dot" style="--c: var(--fg-3); opacity: .45"></span> Rest of the league</span>
+      {missing.length > 0 && (
+        <span class="legend__item nfl-sc__missing">{missing.map((a) => <TeamMark abbr={a} size="sm" />)} no team EPA in the snapshot (stored as 0.0 with 0 plays)</span>
+      )}
+    </div>
+  </div>
+</div>

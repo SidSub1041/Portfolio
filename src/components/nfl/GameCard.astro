@@ -1,0 +1,109 @@
+---
+/**
+ * One playoff game, laid out as the dashboard's components/game-card.tsx draws it:
+ * date chip and recommendation badge, away and home rows with EPA and projected points,
+ * then the Vegas / Model / Edge / Pct tiles. Emoji-free; icons instead.
+ */
+import Icon from '../Icon.astro';
+import TeamMark from './TeamMark.astro';
+
+export interface Game {
+  homeTeam: string; awayTeam: string; homeAbbr: string; awayAbbr: string;
+  gameDate: string; gameTime: string; vegasTotal: number; modelTotal: number;
+  homeScore: number; awayScore: number; edge: number; recommendation: string;
+  homeOffEpa: number; homeDefEpa: number; awayOffEpa: number; awayDefEpa: number;
+}
+interface Props { game: Game; index: number }
+const { game: g, index } = Astro.props;
+
+const minus = (s: string) => s.replace('-', '−');
+const signed = (v: number, d: number) => minus(`${v > 0 ? '+' : ''}${v.toFixed(d)}`);
+const rec = g.recommendation as 'over' | 'under' | 'hold';
+const pct = (g.edge / g.vegasTotal) * 100;
+const id = `game-${g.awayAbbr}-${g.homeAbbr}`.toLowerCase();
+const offTone = (v: number) => (v > 0 ? 'pos' : 'neg');
+const defTone = (v: number) => (v < 0 ? 'pos' : 'neg');
+const rows = [
+  { side: 'Away', abbr: g.awayAbbr, name: g.awayTeam, off: g.awayOffEpa, def: g.awayDefEpa, pts: g.awayScore },
+  { side: 'Home', abbr: g.homeAbbr, name: g.homeTeam, off: g.homeOffEpa, def: g.homeDefEpa, pts: g.homeScore },
+];
+---
+<article class="gc card card--hover reveal" id={id} style={`--i:${index + 1}`} data-rec={rec} aria-labelledby={`${id}-title`}>
+  <header class="gc__head">
+    <div class="gc__when">
+      <span class="gc__date">{g.gameDate}</span>
+      <span class="gc__time">Time {g.gameTime}</span>
+    </div>
+    <span class="nfl-rec" data-rec={rec}>
+      <Icon name="trending-up" size={15} class="ico nfl-rec__ico nfl-rec__ico--over" />
+      <Icon name="trending-down" size={15} class="ico nfl-rec__ico nfl-rec__ico--under" />
+      <Icon name="minus" size={15} class="ico nfl-rec__ico nfl-rec__ico--hold" />
+      <span class="nfl-rec__text">{rec}</span>
+    </span>
+  </header>
+  <h3 class="sr-only" id={`${id}-title`}>{g.awayTeam} at {g.homeTeam}, {g.gameDate}</h3>
+
+  <div class="gc__teams">
+    {rows.map((r) => (
+      <div class="gc__team">
+        <TeamMark abbr={r.abbr} name={r.name} />
+        <div class="gc__who">
+          <span class="gc__side">{r.side}</span>
+          <span class="gc__name">{r.name}</span>
+          <span class="gc__epa">
+            <span class={`gc__epa-v gc__epa-v--${offTone(r.off)}`}>Off {signed(r.off, 3)}</span>
+            <span class={`gc__epa-v gc__epa-v--${defTone(r.def)}`}>Def {signed(r.def, 3)}</span>
+          </span>
+        </div>
+        <div class="gc__score"><b class="num">{r.pts.toFixed(1)}</b><span>pts</span></div>
+      </div>
+    ))}
+  </div>
+
+  <div class="gc__tiles">
+    <div class="tile tile--vegas"><span class="tile__k">Vegas</span><b class="tile__v num">{g.vegasTotal.toFixed(1)}</b></div>
+    <div class="tile tile--model"><span class="tile__k">Model</span><b class="tile__v num">{g.modelTotal.toFixed(1)}</b></div>
+    <div class={`tile tile--edge tile--${g.edge > 0 ? 'pos' : 'neg'}`}><span class="tile__k">Edge</span><b class="tile__v num">{signed(g.edge, 1)}</b></div>
+    <div class="tile tile--pct"><span class="tile__k">Pct</span><b class="tile__v num">{minus(pct.toFixed(1))}%</b></div>
+  </div>
+</article>
+
+<style>
+  .gc { display: grid; gap: 20px; padding: clamp(18px, 2.4vw, 26px); border-radius: 16px; }
+  .gc.is-flash { box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-2); border-color: var(--accent); }
+  .gc__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .gc__when { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .gc__date { padding: 6px 11px; border-radius: 999px; background: var(--bg-sunk); font-family: var(--font-mono); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; color: var(--fg-2); }
+  .gc__time { font-size: 0.82rem; color: var(--fg-3); white-space: nowrap; }
+
+  .gc__teams { display: grid; gap: 8px; }
+  .gc__team { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--bg) 60%, var(--bg-elev)); transition: background 0.25s, border-color 0.25s; }
+  .gc:hover .gc__team { border-color: var(--line-strong); }
+  .gc__who { display: grid; gap: 2px; min-width: 0; }
+  .gc__side { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); }
+  .gc__name { font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; }
+  .gc__epa { display: flex; gap: 12px; margin-top: 3px; font-family: var(--font-mono); font-size: 0.74rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .gc__epa-v--pos { color: color-mix(in srgb, var(--pos) 78%, #000); }
+  .gc__epa-v--neg { color: color-mix(in srgb, var(--neg) 88%, #000); }
+  .gc__score { text-align: right; display: grid; gap: 2px; }
+  .gc__score b { font-family: var(--font-display); font-weight: 500; font-size: 1.6rem; line-height: 1; letter-spacing: -0.02em; }
+  .gc__score span { font-size: 0.72rem; color: var(--fg-3); font-family: var(--font-mono); }
+
+  .gc__tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .tile { --tile: var(--accent); --tile-fg: var(--accent-hover); display: grid; gap: 4px; padding: 12px 8px; text-align: center; border-radius: 10px; background: color-mix(in srgb, var(--tile) 10%, var(--bg-elev)); border: 1px solid color-mix(in srgb, var(--tile) 26%, transparent); transition: transform 0.25s var(--ease-out); }
+  .gc:hover .tile { transform: translateY(-1px); }
+  .tile__k { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-2); }
+  .tile__v { font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; letter-spacing: -0.02em; color: var(--tile-fg); line-height: 1.1; }
+  .tile--model { --tile: var(--purple); --tile-fg: var(--purple); }
+  .tile--pos { --tile: var(--pos); --tile-fg: color-mix(in srgb, var(--pos) 78%, #000); background: color-mix(in srgb, var(--pos) 12%, var(--bg-elev)); }
+  .tile--neg { --tile: var(--neg); --tile-fg: color-mix(in srgb, var(--neg) 88%, #000); }
+  .tile--pct { --tile: var(--hl); --tile-fg: var(--warn); background: color-mix(in srgb, var(--hl) 14%, var(--bg-elev)); border-color: color-mix(in srgb, var(--hl) 40%, transparent); }
+
+  @media (max-width: 420px) {
+    .gc__team { gap: 10px; padding: 10px 12px; }
+    .gc__epa { flex-wrap: wrap; gap: 4px 10px; }
+    .gc__tiles { gap: 6px; }
+    .tile { padding: 10px 4px; }
+    .tile__v { font-size: 1.05rem; }
+  }
+</style>

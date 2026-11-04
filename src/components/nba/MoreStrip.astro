@@ -1,0 +1,41 @@
+---
+/** "More from the portfolio": the other four project tabs. */
+import Icon from '../Icon.astro';
+import { projects } from '../../data/projects';
+import { url } from '../../site.config';
+interface Props { current: string }
+const { current } = Astro.props;
+const others = projects.filter((p) => p.id !== current);
+---
+<section class="section section--tight nba-more" aria-labelledby="nba-more-title">
+  <div class="container">
+    <div class="between" style="margin-bottom:22px">
+      <h2 id="nba-more-title" class="nba-more__title">More from the portfolio</h2>
+      <a class="btn btn--ghost btn--sm" href={url('/')}>Back to the overview <Icon name="arrow-right" class="arrow" size={16} /></a>
+    </div>
+    <div class="nba-more__grid">
+      {others.map((p, i) => (
+        <a class="nba-more__card card card--hover reveal" href={url(p.href)} style={`--swatch:${p.color};--i:${i + 1}`}>
+          <span class="row" style="gap:8px"><span class="swatch" aria-hidden="true"></span><span class="eyebrow eyebrow--plain">{p.tab}</span></span>
+          <h3>{p.name}</h3>
+          <p class="small muted">{p.oneLiner}</p>
+          <span class="nba-more__go">Open the tab <Icon name="arrow-right" size={16} class="arrow" /></span>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
+<style>
+  .nba-more { border-top: 1px solid var(--line); background: var(--bg-sunk); }
+  .nba-more__title { font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.4rem); }
+  .nba-more__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .nba-more__card { display: grid; gap: 10px; align-content: start; padding: 22px; }
+  .nba-more__card h3 { font-family: var(--font-body); font-weight: 700; font-size: 1.05rem; letter-spacing: 0; }
+  .nba-more__card p { margin: 0; }
+  .nba-more__go { margin-top: auto; display: inline-flex; align-items: center; gap: 8px; font-size: 0.86rem; font-weight: 600; color: var(--fg-2); }
+  .nba-more__card:hover .nba-more__go { color: var(--accent); }
+  .nba-more__card:hover .arrow { transform: translateX(3px); }
+  .nba-more__card .arrow { transition: transform 0.25s var(--ease-out); }
+  @media (max-width: 960px) { .nba-more__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .nba-more__grid { grid-template-columns: 1fr; } }
+</style>

@@ -1,0 +1,32 @@
+---
+/**
+ * A terminal-style ticker tape of the six pilot games: the two markets each game had
+ * (winner-side moneyline, totals) and how they settled. The track is rendered twice so
+ * the CSS loop is seamless; the copy is aria-hidden.
+ */
+export interface TapeGame {
+  code: string; away: string; home: string; mlSide: string; mlResult: string; winner: string; totalLine: string; totResult: string;
+}
+interface Props { games: TapeGame[]; finals: Record<string, { away: number; home: number }>; label?: string }
+const { games, finals, label = 'The six games in the pilot slate and how their markets settled' } = Astro.props;
+const yesNo = (v: string) => (v === 'yes' ? 'YES' : 'NO');
+---
+<div class="kx-tape" aria-label={label} role="group">
+  {[0, 1].map((copy) => (
+    <div class="kx-tape__track" aria-hidden={copy === 1 ? 'true' : undefined}>
+      {games.map((g) => {
+        const f = finals[g.code];
+        return (
+          <span class="kx-tape__item">
+            <b class="kx-tape__game">{g.away} @ {g.home}</b>
+            {f && <span class="kx-tape__score">{g.away} {f.away}, {g.home} {f.home}</span>}
+            <span class="kx-tape__mkt">ML {g.mlSide}</span>
+            <i class:list={['kx-tape__res', g.mlResult === 'yes' ? 'is-yes' : 'is-no']}>{yesNo(g.mlResult)}</i>
+            <span class="kx-tape__mkt">TOTAL {g.totalLine}+</span>
+            <i class:list={['kx-tape__res', g.totResult === 'yes' ? 'is-yes' : 'is-no']}>{yesNo(g.totResult)}</i>
+          </span>
+        );
+      })}
+    </div>
+  ))}
+</div>

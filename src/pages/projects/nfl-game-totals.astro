@@ -1,6 +1,637 @@
 ---
+/**
+ * NFL Game Totals tab. Ports the model-game-totals dashboard's light look (slate, soft blue
+ * wash, white cards, blue/purple/emerald/rose/amber tiles) and adds what a static dashboard
+ * cannot: an explorable threshold, a league-wide EPA map, the pipeline and the honest
+ * generalisation numbers. Every figure comes from src/data/nfl.json or the repository docs
+ * named in DESIGN.md section 6.
+ */
 import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import Dialog from '../../components/Dialog.astro';
+import SectionHead from '../../components/SectionHead.astro';
+import Stat from '../../components/Stat.astro';
+import GameCard from '../../components/nfl/GameCard.astro';
+import TeamMark from '../../components/nfl/TeamMark.astro';
+import FieldBg from '../../components/nfl/FieldBg.astro';
+import Dumbbell from '../../components/nfl/Dumbbell.astro';
+import EpaScatter from '../../components/nfl/EpaScatter.astro';
+import { barChart } from '../../lib/chart';
+import { fmtDate, fmtInt } from '../../lib/format';
+import { projects, projectById } from '../../data/projects';
+import { url } from '../../site.config';
+import nfl from '../../data/nfl.json';
+
+const p = projectById.nfl;
+const others = projects.filter((x) => x.id !== 'nfl');
+const games = nfl.games;
+const m = nfl.modelMetrics;
+const s = nfl.summaryStats;
+const generated = fmtDate(nfl.generatedAt.slice(0, 10));
+const snapshot = fmtDate(nfl.snapshotAt.slice(0, 10));
+const linesFetched = fmtDate(nfl.vegas.generatedAt.slice(0, 10));
+const injuriesAt = fmtDate(nfl.injuries.generatedAt.slice(0, 10));
+const [round, roundDates] = nfl.playoffWeekend.split(' - ');
+
+// Recomputed from the four game rows. The snapshot's own summary block was written by
+// fetch_nflfastr_data.py before 06_team_specific_model.py overwrote the rows, so it no
+// longer matches them (it says 1 over, 1 under, 2 hold, average edge 4.8).
+const counts = games.reduce((acc, g) => { acc[g.recommendation as 'over' | 'under' | 'hold'] += 1; return acc; }, { over: 0, under: 0, hold: 0 });
+const avgAbsEdge = games.reduce((a, g) => a + Math.abs(g.edge), 0) / games.length;
+const avgModel = games.reduce((a, g) => a + g.modelTotal, 0) / games.length;
+const avgVegas = games.reduce((a, g) => a + g.vegasTotal, 0) / games.length;
+const byRec = (r: string) => games.filter((g) => g.recommendation === r).map((g) => `${g.awayTeam} at ${g.homeTeam}`).join(', ');
+
+// Historical validation, from HISTORICAL_MODEL.md in the repository.
+const hist = {
+  seasons: '2022–2024', plays: 148591, games: 854, train: 683, test: 171, r2: 0.5477, mae: 6.7, rmse: 8.61, avgTotal: 44.6, flatProjection: 45.7,
+  features: [['Home pass yards', 4.3], ['Home offensive EPA', 3.31], ['Away defensive EPA', 3.31], ['Away pass yards', 3.3], ['Home turnovers', 2.98]] as [string, number][],
+};
+const featSvg = barChart({
+  horizontal: true, height: 232, width: 720, pad: { l: 168, r: 56 }, gap: 0.42,
+  categories: hist.features.map((f) => f[0]),
+  series: [{ values: hist.features.map((f) => f[1]), color: 'var(--accent)' }],
+  valueFmt: (v) => v.toFixed(2),
+  ariaLabel: `Top five feature coefficients of the historical model: ${hist.features.map((f) => `${f[0]} ${f[1].toFixed(2)}`).join(', ')}`,
+});
+
+// The scripts folder (nfl.json.scripts) with the role each file states in its docstring.
+const pipelineScripts = new Set(['fetch_via_odds_api.py', '02_enhanced_analysis.py', '03_injury_report.py', '04_enhanced_model.py', '05_weekly_scheduler.py']);
+const scriptRoles: Record<string, string> = {
+  '01_generate_sample_data.py': 'Sample data generator; creates the CSV files the first analysis ran on.',
+  '02_build_model.py': 'Loads the CSVs, builds training features with pandas and fits a regression model.',
+  '02_enhanced_analysis.py': 'Enhanced analysis: season weighting, EPA split by passing and rushing, head-to-head records, advanced stats.',
+  '03_injury_report.py': 'Scrapes the ESPN injury tracker and filters retired, inactive and cleared players.',
+  '03_project_playoffs.py': 'Compares model projections with Vegas lines to find edges.',
+  '04_analysis_utils.py': 'Reusable functions for weekly and per-round updates.',
+  '04_enhanced_model.py': 'Trains the enhanced model: EPA, advanced stats, head-to-head and injury adjustments.',
+  '05_historical_model.py': 'Trains on 2022–2024 regular-season games with a proper train/test split.',
+  '05_weekly_scheduler.py': 'Runs the refresh and retrain cycle; cron, GitHub Actions or a cloud scheduler can trigger it.',
+  '06_team_specific_model.py': 'Team-specific playoff projections from the stored team stats; writes the dashboard’s game rows.',
+  'download_team_logos.py': 'Downloads team logos from the ESPN and NFL CDN into public/images/team-logos/.',
+  'fetch_nflfastr_data.py': 'nflfastR pipeline via nfl_data_py: team EPA, model training and the nfl_analysis.json export.',
+  'fetch_vegas_lines.py': 'Vegas lines through free APIs and web scraping.',
+  'fetch_vegas_lines_advanced.py': 'Vegas lines gathered automatically from several sources.',
+  'fetch_vegas_lines_scraper.py': 'Scrapes lines from public sports sites without API restrictions.',
+  'fetch_via_odds_api.py': 'The Odds API integration: real lines with a free API key.',
+  'nfl_betting_complete.py': 'All-in-one run: sample data, model and projections in a single execution.',
+  'nfl_betting_notebook.py': 'Notebook-style walkthrough of the sample-data analysis.',
+};
+const title = 'NFL Game Totals Model — Sid Subramanian';
+const description = 'Projected NFL playoff game totals versus the Vegas line, from a linear-regression model over nflfastR EPA features. Game cards, model metrics, the pipeline and the historical validation.';
 ---
-<Base title="nfl-game-totals placeholder" theme="nfl">
-  <section class="hero"><div class="container"><span class="kicker"><span class="dot"></span> nfl theme</span><h1>nfl-game-totals</h1><p class="lead">Placeholder page, theme check only.</p></div></section>
+<Base title={title} description={description} theme="nfl">
+  <div id="nfl-page" class="nfl">
+    <div class="container">
+      <div class="proj-bar">
+        <div class="row">
+          <span class="nfl-status"><span class="nfl-status__dot pulse"></span>{p.status}</span>
+          <span class="muted">{p.period}</span>
+        </div>
+        <div class="cluster nfl-stack" aria-label="Stack">{p.stack.map((t) => <span class="chip">{t}</span>)}</div>
+        <div class="proj-bar__links">
+          {p.links.map((l) => <a class="btn btn--ghost btn--sm" href={l.url}><Icon name={l.kind === 'repo' ? 'github' : 'external'} size={14} /> {l.label}</a>)}
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. Header, like the app -->
+    <section class="hero nfl-hero grain" aria-labelledby="nfl-title">
+      <FieldBg />
+      <div class="container nfl-hero__grid">
+        <div class="nfl-hero__copy">
+          <span class="kicker reveal"><span class="dot"></span> {round} <span class="nfl-hero__sep" aria-hidden="true">·</span> {roundDates}</span>
+          <h1 id="nfl-title" class="reveal" style="--i:1">NFL Game Predictions</h1>
+          <p class="lead reveal" style="--i:2">A linear regression over team EPA, yardage and turnover features projects the total for each Divisional Round game and compares it with the sportsbook line. A call needs a 2-point edge; anything closer is a hold.</p>
+          <p class="nfl-hero__source mono reveal" style="--i:3">Data from nflfastR <span aria-hidden="true">·</span> Vegas lines from The Odds API <span aria-hidden="true">·</span> generated {generated}</p>
+          <div class="hero__actions reveal" style="--i:4">
+            <a class="btn btn--primary" href={p.links[0].url}>Open the live dashboard <Icon name="arrow-up-right" class="arrow" size={16} /></a>
+            <a class="btn btn--ghost" href={p.links[1].url}><Icon name="github" size={16} /> Source on GitHub</a>
+            <button class="btn btn--soft" type="button" data-dialog-open="nfl-how"><Icon name="info" size={16} /> How it works</button>
+          </div>
+          <p class="nfl-hero__note small reveal" style="--i:5">This tab reads a snapshot of the dashboard's data files taken {snapshot}. The live site regenerates whenever the weekly pipeline runs.</p>
+        </div>
+
+        <aside class="slate reveal reveal--scale" style="--i:3" aria-labelledby="nfl-slate-title">
+          <div class="slate__head">
+            <div>
+              <span class="eyebrow eyebrow--plain">The slate</span>
+              <h2 class="slate__title" id="nfl-slate-title">{round}</h2>
+            </div>
+            <span class="chip chip--outline">{s.gamesAnalyzed} games</span>
+          </div>
+          <ol class="slate__list" role="list">
+            {games.map((g) => (
+              <li>
+                <a class="slate__row" href={`#game-${g.awayAbbr}-${g.homeAbbr}`.toLowerCase()}>
+                  <span class="slate__marks"><TeamMark abbr={g.awayAbbr} name={g.awayTeam} size="sm" /><span class="slate__at" aria-hidden="true">@</span><TeamMark abbr={g.homeAbbr} name={g.homeTeam} size="sm" /></span>
+                  <span class="slate__names"><b>{g.awayTeam} at {g.homeTeam}</b><span class="slate__date">{g.gameDate}</span></span>
+                  <span class="slate__nums mono"><span class="slate__vegas">{g.vegasTotal.toFixed(1)}</span><Icon name="arrow-right" size={12} /><span class="slate__model">{g.modelTotal.toFixed(1)}</span></span>
+                  <span class="nfl-rec nfl-rec--sm" data-rec={g.recommendation}>
+                    <Icon name="trending-up" size={13} class="ico nfl-rec__ico nfl-rec__ico--over" />
+                    <Icon name="trending-down" size={13} class="ico nfl-rec__ico nfl-rec__ico--under" />
+                    <Icon name="minus" size={13} class="ico nfl-rec__ico nfl-rec__ico--hold" />
+                    <span class="nfl-rec__text">{g.recommendation}</span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ol>
+          <div class="slate__foot mono">
+            <span><span class="slate__swatch slate__swatch--vegas"></span>Vegas avg {avgVegas.toFixed(1)}</span>
+            <span><span class="slate__swatch slate__swatch--model"></span>Model avg {avgModel.toFixed(1)}</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 2. Summary and model performance -->
+    <section class="section section--tight" id="nfl-summary" aria-labelledby="nfl-summary-title">
+      <div class="container">
+        <SectionHead eyebrow="01 · Summary" title="Four games, two calls, one hold" id="nfl-summary-title" lead="What the model says about the Divisional Round, and how well the shipped fit describes the season it was trained on." />
+        <div class="grid grid--4 nfl-sum">
+          <div class="sum card reveal" style="--i:1">
+            <Icon name="calendar" class="sum__ico" />
+            <span class="sum__label">Games analysed</span>
+            <span class="sum__value num" data-count={s.gamesAnalyzed} data-format="int">{s.gamesAnalyzed}</span>
+            <span class="sum__sub">{round}</span>
+          </div>
+          <div class="sum card reveal" style="--i:2">
+            <Icon name="trending-up" class="sum__ico" />
+            <span class="sum__label">Avg edge</span>
+            <span class="sum__value num" data-count={avgAbsEdge} data-format="dec1">{avgAbsEdge.toFixed(1)}</span>
+            <span class="sum__sub">points from the Vegas line, absolute</span>
+          </div>
+          <div class="sum card reveal" style="--i:3">
+            <Icon name="target" class="sum__ico" />
+            <span class="sum__label">Over picks</span>
+            <span class="sum__value num text-pos" data-count={counts.over} data-format="int">{counts.over}</span>
+            <span class="sum__sub">{byRec('over')}</span>
+          </div>
+          <div class="sum card reveal" style="--i:4">
+            <Icon name="arrow-down" class="sum__ico" />
+            <span class="sum__label">Under picks</span>
+            <span class="sum__value num text-neg" data-count={counts.under} data-format="int">{counts.under}</span>
+            <span class="sum__sub">{byRec('under')}; {counts.hold} hold ({byRec('hold')})</span>
+          </div>
+        </div>
+        <p class="small muted nfl-sum__note reveal">Counts and the average are recomputed from the four game rows. The snapshot's own summary block (1 over, 1 under, 2 hold, average edge {s.avgEdge.toFixed(1)}) was written by <code>fetch_nflfastr_data.py</code> before <code>06_team_specific_model.py</code> rewrote the rows, and the live dashboard still displays it.</p>
+
+        <div class="perf panel reveal" style="--i:2">
+          <div class="panel__head">
+            <span>Model performance</span>
+            <span class="perf__tag">{nfl.trainingSeasons.join(', ')} season fit · in-sample</span>
+          </div>
+          <div class="panel__body perf__body">
+            <div class="perf__grid">
+              <Stat label="R² score" value={m.r2_score.toFixed(4)} />
+              <Stat label="MAE" value={m.mae.toFixed(2)} count={m.mae} format="dec2" sub="points" />
+              <Stat label="RMSE" value={m.rmse.toFixed(2)} count={m.rmse} format="dec2" sub="points" />
+              <Stat label="Training samples" value={String(m.training_samples)} count={m.training_samples} format="int" sub="games, 2024 season" />
+            </div>
+            <p class="perf__note">These are the numbers the dashboard shows: the fit of one season, scored on the games it was fitted to. The out-of-sample check on three seasons is in <a href="#nfl-validation">Validation</a>.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Game cards -->
+    <section class="section section--bordered" id="nfl-games" aria-labelledby="nfl-games-title">
+      <div class="container">
+        <SectionHead eyebrow="02 · Divisional Round predictions" title="Every card the dashboard ships" id="nfl-games-title" lead="Projected points per team, each side's EPA per play, and the four tiles that turn a projection into a call. Offence is green when it adds points; defence is green when it takes them away." />
+        <div class="grid grid--2 nfl-games">
+          {games.map((g, i) => <GameCard game={g} index={i} />)}
+        </div>
+        <div class="nfl-games__legend legend reveal">
+          <span class="legend__item"><span class="legend__swatch" style="--c: var(--accent)"></span> Vegas total</span>
+          <span class="legend__item"><span class="legend__swatch" style="--c: var(--purple)"></span> Model total</span>
+          <span class="legend__item"><span class="legend__swatch" style="--c: var(--pos)"></span> Edge above the line</span>
+          <span class="legend__item"><span class="legend__swatch" style="--c: var(--neg)"></span> Edge below the line</span>
+          <span class="legend__item"><span class="legend__swatch" style="--c: var(--hl)"></span> Edge as a share of the line</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Charts -->
+    <section class="section section--bordered" id="nfl-charts" aria-labelledby="nfl-charts-title">
+      <div class="container">
+        <SectionHead eyebrow="03 · Model vs Vegas" title="Where the model disagrees, and by how much" id="nfl-charts-title" lead="The band around each Vegas line is the threshold a projection must clear to become a call. Move it and watch the calls change." />
+        <div class="grid grid--2 nfl-charts">
+          <div class="chart-card reveal" style="--i:1">
+            <div class="chart-card__head">
+              <span class="chart-card__title">Model vs Vegas totals, by game</span>
+              <span class="chart-card__note">points · {round}</span>
+            </div>
+            <div class="thr">
+              <label class="thr__label" for="nfl-threshold">Edge threshold <output class="thr__value mono" id="nfl-threshold-value" for="nfl-threshold">±2.0</output></label>
+              <input class="thr__range" id="nfl-threshold" type="range" min="0.5" max="6" step="0.5" value="2" aria-describedby="nfl-threshold-help" />
+              <button class="btn btn--ghost btn--sm thr__reset" id="nfl-threshold-reset" type="button" hidden>Reset to ±2.0</button>
+            </div>
+            <Dumbbell games={games} threshold={2} />
+            <div class="thr__foot">
+              <p class="thr__counts mono" id="nfl-threshold-help" aria-live="polite">
+                <span class="thr__count thr__count--over"><b id="nfl-count-over">{counts.over}</b> over</span>
+                <span class="thr__count thr__count--under"><b id="nfl-count-under">{counts.under}</b> under</span>
+                <span class="thr__count thr__count--hold"><b id="nfl-count-hold">{counts.hold}</b> hold</span>
+              </p>
+              <p class="thr__note small" id="nfl-threshold-note" hidden>The dashboard uses ±2.0 (<code>edge &gt; 2</code> is over, <code>edge &lt; −2</code> is under). This is an exploration, not the published call.</p>
+            </div>
+            <div class="legend nfl-charts__legend">
+              <span class="legend__item"><span class="legend__swatch legend__swatch--dot" style="--c: var(--accent)"></span> Vegas line</span>
+              <span class="legend__item"><span class="legend__swatch legend__swatch--dot" style="--c: var(--purple)"></span> Model projection</span>
+              <span class="legend__item"><span class="legend__swatch" style="--c: color-mix(in srgb, var(--accent) 30%, var(--bg-elev))"></span> Threshold band</span>
+            </div>
+          </div>
+
+          <div class="chart-card reveal" style="--i:2">
+            <div class="chart-card__head">
+              <span class="chart-card__title">Offence vs defence, EPA per play</span>
+              <span class="chart-card__note">playoff teams labelled · 32-team league</span>
+            </div>
+            <EpaScatter teams={nfl.teams} league={nfl.league} />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Behind the numbers: dialogs -->
+    <section class="section section--bordered" id="nfl-more" aria-labelledby="nfl-more-title">
+      <div class="container">
+        <SectionHead eyebrow="04 · Behind the numbers" title="What feeds the model" id="nfl-more-title" />
+        <div class="callout nfl-injury reveal">
+          <Icon name="info" class="nfl-injury__ico" />
+          <div>
+            <b>No high-impact injuries flagged.</b> The ESPN scrape generated {injuriesAt} lists no key injuries for any of the eight teams, with retired and inactive players filtered out. One high-impact injury at WR, RB or TE would cut that team's offensive EPA by 15%.
+            <button class="link nfl-injury__btn" type="button" data-dialog-open="nfl-injuries">Open the injury report</button>
+          </div>
+        </div>
+        <div class="grid grid--3 nfl-more">
+          <a class="feature card--hover reveal" style="--i:1" href={p.links[1].url}>
+            <Icon name="github" />
+            <h3>View on GitHub</h3>
+            <p>The complete source: the data pipeline, the model training scripts and the Next.js dashboard.</p>
+            <span class="feature__cta">github.com/SidSub1041/model-game-totals <Icon name="arrow-up-right" size={14} /></span>
+          </a>
+          <button class="feature card--hover reveal" style="--i:2" type="button" data-dialog-open="nfl-how">
+            <Icon name="book" />
+            <h3>How it works</h3>
+            <p>Linear regression trained on 49,000+ plays from nflfastR with EPA metrics, injury adjustments and head-to-head records.</p>
+            <span class="feature__cta">Read the method <Icon name="arrow-right" size={14} /></span>
+          </button>
+          <button class="feature card--hover reveal" style="--i:3" type="button" data-dialog-open="nfl-injuries">
+            <Icon name="shield" />
+            <h3>Injury report</h3>
+            <p>High-impact injuries scraped from ESPN each week, filtered for retired and inactive players.</p>
+            <span class="feature__cta">View the report <Icon name="arrow-right" size={14} /></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Pipeline -->
+    <section class="section section--bordered" id="nfl-pipeline" aria-labelledby="nfl-pipeline-title">
+      <div class="container">
+        <SectionHead eyebrow="05 · Pipeline" title="Five numbered scripts, one weekly cycle" id="nfl-pipeline-title" lead="Each step writes a JSON file into public/data; the dashboard reads them at build time. The scheduler runs the first four in order and stops if the lines, the analysis or the model fail." />
+        <div class="split nfl-pipe">
+          <ol class="step-list reveal" role="list">
+            <li class="step"><span class="step__num" aria-hidden="true"></span><div><h3>Fetch Vegas lines</h3><code class="step__file">fetch_via_odds_api.py</code><p>Pulls the weekend's totals from The Odds API (free tier, 500 requests a month) into <code>vegas_lines.json</code>. The snapshot's lines were fetched {linesFetched} for {nfl.vegas.gamesCount} games.</p></div></li>
+            <li class="step"><span class="step__num" aria-hidden="true"></span><div><h3>Enhanced analysis</h3><code class="step__file">02_enhanced_analysis.py</code><p>Loads nflfastR play-by-play through nfl_data_py, weights the current season at 70% and the prior one at 30%, and computes each team's offensive and defensive EPA split by passing and rushing, plus yards, touchdowns, turnovers and head-to-head records, into <code>enhanced_analysis.json</code>.</p></div></li>
+            <li class="step"><span class="step__num" aria-hidden="true"></span><div><h3>Injury report</h3><code class="step__file">03_injury_report.py</code><p>Scrapes ESPN's injury tracker for the eight playoff teams, drops retired, inactive and cleared players, and grades the rest high, medium or low impact, into <code>injury_report.json</code>.</p></div></li>
+            <li class="step"><span class="step__num" aria-hidden="true"></span><div><h3>Train and project</h3><code class="step__file">04_enhanced_model.py</code><p>Standardises the features, fits a scikit-learn <code>LinearRegression</code>, multiplies a team's injury factor by 0.85 for each high-impact WR, RB or TE injury, and writes the projections with R², MAE and RMSE to <code>enhanced_model.json</code>.</p></div></li>
+            <li class="step"><span class="step__num" aria-hidden="true"></span><div><h3>Export and deploy</h3><code class="step__file">lib/data-loader.ts</code><p>The Next.js dashboard reads <code>public/data/*.json</code> on the server, falls back to sample data if a file is missing, and Vercel rebuilds the site on every push.</p></div></li>
+          </ol>
+          <div class="stack nfl-pipe__side">
+            <div class="card reveal reveal--left" style="--i:1">
+              <span class="eyebrow">Weekly scheduler</span>
+              <h3 class="nfl-pipe__h">Every Monday at 10:00</h3>
+              <pre class="nfl-cron"><code>0 10 * * 1  python3 scripts/05_weekly_scheduler.py</code></pre>
+              <p class="small"><code>05_weekly_scheduler.py</code> runs steps 1 to 4, aborts if the lines, the analysis or the model fail, continues past a failed injury scrape, and records the run in <code>logs/last_update.json</code>. The repository documents both the cron line and an equivalent GitHub Actions workflow.</p>
+            </div>
+            <div class="card reveal reveal--left" style="--i:2">
+              <span class="eyebrow">Stack</span>
+              <dl class="kv nfl-pipe__kv">
+                <dt>Model</dt><dd>Python 3.13, pandas, scikit-learn, nfl_data_py</dd>
+                <dt>Dashboard</dt><dd>Next.js 16.0.10, React 19, Tailwind CSS, Radix UI, Recharts</dd>
+                <dt>Hosting</dt><dd>Vercel, rebuilt on every push</dd>
+                <dt>Scripts</dt><dd>{nfl.scripts.length} Python files in <code>scripts/</code></dd>
+              </dl>
+              <button class="btn btn--soft btn--sm nfl-pipe__btn" type="button" data-dialog-open="nfl-scripts"><Icon name="code" size={14} /> Browse all {nfl.scripts.length} scripts</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Historical validation -->
+    <section class="section section--bordered" id="nfl-validation" aria-labelledby="nfl-validation-title">
+      <div class="container">
+        <SectionHead eyebrow="06 · Validation" title="Two sets of numbers, and why both are shown" id="nfl-validation-title" lead="The dashboard reports the fit of a single season, scored in-sample. The historical model answers the harder question: how does the same approach do on games it never saw?" />
+        <div class="grid grid--2 nfl-val">
+          <div class="card nfl-val__card reveal" style="--i:1">
+            <span class="eyebrow eyebrow--plain">Dashboard snapshot</span>
+            <h3>{nfl.trainingSeasons.join(', ')} season fit, in-sample</h3>
+            <div class="nfl-val__stats">
+              <Stat label="Games" value={String(m.training_samples)} count={m.training_samples} format="int" />
+              <Stat label="R²" value={m.r2_score.toFixed(4)} />
+              <Stat label="MAE" value={m.mae.toFixed(2)} count={m.mae} format="dec2" />
+              <Stat label="RMSE" value={m.rmse.toFixed(2)} count={m.rmse} format="dec2" />
+            </div>
+            <p class="small">Scored on the {m.training_samples} games it was fitted to, so it describes the season rather than predicting one.</p>
+          </div>
+          <div class="card nfl-val__card nfl-val__card--test reveal" style="--i:2">
+            <span class="eyebrow eyebrow--plain">Historical check</span>
+            <h3>{hist.seasons}, held-out test set</h3>
+            <div class="nfl-val__stats">
+              <Stat label="Plays" value={fmtInt(hist.plays)} count={hist.plays} format="int" />
+              <Stat label="Games" value={String(hist.games)} count={hist.games} format="int" sub={`${hist.train} train / ${hist.test} test`} />
+              <Stat label="Test R²" value={hist.r2.toFixed(4)} tone="accent" />
+              <Stat label="Test MAE" value={hist.mae.toFixed(2)} count={hist.mae} format="dec2" sub={`RMSE ${hist.rmse.toFixed(2)}`} />
+            </div>
+            <p class="small">An 80/20 split; the model is scored on the {hist.test} games it did not train on. Documented in <code>HISTORICAL_MODEL.md</code> and produced by <code>05_historical_model.py</code>.</p>
+          </div>
+        </div>
+        <div class="grid grid--2 nfl-val__row">
+          <div class="chart-card reveal" style="--i:1">
+            <div class="chart-card__head">
+              <span class="chart-card__title">What moves the historical model</span>
+              <span class="chart-card__note">top five |coefficients|, standardised features</span>
+            </div>
+            <Fragment set:html={featSvg} />
+          </div>
+          <div class="callout callout--warn nfl-val__callout reveal" style="--i:2">
+            <b>Read honestly.</b>
+            <p>The historical model's own playoff projections came out at {hist.flatProjection} points for every game, close to the {hist.avgTotal}-point average total across its three seasons, so the dashboard shows the team-specific single-season fit instead. The repository lists the limits plainly: four playoff games is very little data, EPA does not capture play-calling or motivation, weather is not in the model, and injuries need manual updates.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- More from the portfolio -->
+    <section class="section section--bordered section--tight" aria-labelledby="nfl-more-tabs">
+      <div class="container">
+        <div class="between nfl-others__head">
+          <h2 class="nfl-others__title" id="nfl-more-tabs">More from the portfolio</h2>
+          <a class="btn btn--ghost btn--sm" href={url('/')}>Home <Icon name="arrow-right" class="arrow" size={14} /></a>
+        </div>
+        <div class="grid grid--4 nfl-others">
+          {others.map((o, i) => (
+            <a class="card card--hover nfl-other reveal" style={`--i:${i + 1}; --swatch:${o.color}`} href={url(o.href)}>
+              <span class="row"><span class="swatch"></span><span class="nfl-other__tab mono">{o.tab}</span></span>
+              <b class="nfl-other__name">{o.name}</b>
+              <p class="small muted">{o.oneLiner}</p>
+              <span class="nfl-other__cta">Open the tab <Icon name="arrow-right" class="arrow" size={14} /></span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Dialogs -->
+  <Dialog id="nfl-how" title="How the model works" eyebrow="Method" wide>
+    <h3>Data sources</h3>
+    <ul>
+      <li><b>nflfastR:</b> 49,000+ plays from the 2024 and 2025 seasons, weighted 30% and 70% (<code>seasonWeights</code> in the snapshot).</li>
+      <li><b>Vegas lines:</b> game totals from The Odds API, fetched {linesFetched} for the snapshot.</li>
+      <li><b>Injuries:</b> an automated weekly scrape of ESPN's injury tracker.</li>
+    </ul>
+    <h3>Sixteen features</h3>
+    <ul>
+      <li><b>EPA:</b> expected points added per play, split into passing, rushing and defensive.</li>
+      <li><b>Volume and outcomes:</b> yards, touchdowns, turnovers, sack rates.</li>
+      <li><b>Matchup history:</b> head-to-head records and seasonal patterns.</li>
+      <li><b>Injury adjustment:</b> a 15% EPA reduction per high-impact injury.</li>
+      <li><b>Seasonal weighting:</b> recent games count for more.</li>
+    </ul>
+    <h3>Model and rule</h3>
+    <p>A scikit-learn linear regression on historical game totals. Edge is the model total minus the Vegas line: above +2.0 the call is <b>over</b>, below −2.0 it is <b>under</b>, anything between is a <b>hold</b>. R², MAE and RMSE for the shipped fit are on the summary card; the out-of-sample check is in the Validation section.</p>
+    <h3>Reading a card</h3>
+    <p>Each team row shows offensive and defensive EPA per play. Offence is green when positive (it adds points); defence is green when negative (it takes points away from opponents). The Pct tile is the edge as a share of the Vegas line.</p>
+    <div class="callout"><b>Disclaimer, as the dashboard states it:</b> the model is for educational purposes. Past performance does not guarantee future results; verify against official lines before placing any bet.</div>
+  </Dialog>
+
+  <Dialog id="nfl-injuries" title="Playoff injury report" eyebrow={`ESPN scrape · ${injuriesAt}`}>
+    <p>High-impact injuries that may affect team performance. Source: {nfl.injuries.source}. The snapshot flags <b>{nfl.injuries.highImpact.length} high-impact</b> and <b>{nfl.injuries.mediumImpact.length} medium-impact</b> injuries.</p>
+    <ul class="nfl-inj" role="list">
+      {Object.entries(nfl.injuries.teams).map(([abbr, list]) => (
+        <li class="nfl-inj__row"><TeamMark abbr={abbr} name={nfl.teams[abbr as keyof typeof nfl.teams]?.name} size="sm" /><span>{nfl.teams[abbr as keyof typeof nfl.teams]?.name ?? abbr}</span><span class="nfl-inj__status"><Icon name="check" size={14} /> {list.length === 0 ? 'No key injuries' : `${list.length} listed`}</span></li>
+      ))}
+    </ul>
+    <div class="callout">
+      <p class="small"><b>Status types:</b> Out (will not play), Doubtful (unlikely to play), Questionable (game-time decision), IR (season-ending). Retired and inactive players are excluded.</p>
+      <p class="small"><b>In the model:</b> each high-impact injury at WR, RB or TE multiplies that team's injury factor by 0.85, a 15% EPA reduction.</p>
+      <p class="small">For live updates see <a href="https://www.espn.com/nfl/injuries">ESPN.com/nfl/injuries</a>.</p>
+    </div>
+  </Dialog>
+
+  <Dialog id="nfl-scripts" title={`The scripts folder (${nfl.scripts.length} files)`} eyebrow="Repository" wide>
+    <p>Everything under <code>scripts/</code> in the repository, with the role each file states in its docstring. The five marked files are the weekly cycle.</p>
+    <div class="table-wrap nfl-scripts">
+      <table class="table">
+        <thead><tr><th>Script</th><th>Role</th></tr></thead>
+        <tbody>
+          {nfl.scripts.map((f) => (
+            <tr>
+              <td><code>{f}</code>{pipelineScripts.has(f) && <span class="chip chip--accent nfl-scripts__chip">weekly</span>}</td>
+              <td>{scriptRoles[f] ?? 'Helper script.'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </Dialog>
+
+  <script src="../../scripts/nfl-totals.ts"></script>
 </Base>
+
+<style is:global>
+  /* ---- Type: Schibsted Grotesk kept light and airy on this tab ---- */
+  #nfl-page h1 { font-weight: 400; letter-spacing: -0.035em; line-height: 0.98; }
+  #nfl-page h2 { font-weight: 450; letter-spacing: -0.028em; }
+  #nfl-page h3 { font-weight: 550; }
+  #nfl-page .stat__value { font-weight: 500; letter-spacing: -0.03em; }
+
+  /* ---- Recommendation badge (game cards, slate rows) ---- */
+  .nfl-rec { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; line-height: 1; color: var(--accent-fg); background: var(--fg-2); white-space: nowrap; }
+  .nfl-rec--sm { padding: 5px 9px; font-size: 0.62rem; }
+  .nfl-rec[data-rec='over'] { background: color-mix(in srgb, var(--pos) 82%, #000); }
+  .nfl-rec[data-rec='under'] { background: color-mix(in srgb, var(--neg) 92%, #000); }
+  .nfl-rec__ico { display: none; width: 1.1em; height: 1.1em; }
+  .nfl-rec[data-rec='over'] .nfl-rec__ico--over, .nfl-rec[data-rec='under'] .nfl-rec__ico--under, .nfl-rec[data-rec='hold'] .nfl-rec__ico--hold { display: block; }
+
+  /* ---- Dumbbell chart ---- */
+  .nfl-db { overflow: visible; margin-top: 8px; }
+  .nfl-db .nfl-db__label { fill: var(--fg); font-weight: 700; }
+  .nfl-db .nfl-db__sub { fill: var(--fg-3); }
+  .nfl-db .nfl-db__band { fill: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .nfl-db .nfl-db__track { stroke: var(--line); stroke-width: 2; }
+  .nfl-db .nfl-db__link { stroke-width: 5; stroke-linecap: round; }
+  .nfl-db .nfl-db__link--pos { stroke: var(--pos); }
+  .nfl-db .nfl-db__link--neg { stroke: var(--neg); }
+  .nfl-db .nfl-db__vegas { fill: var(--accent); stroke: var(--bg-elev); stroke-width: 2.5; }
+  .nfl-db .nfl-db__model { fill: var(--purple); stroke: var(--bg-elev); stroke-width: 2.5; }
+  .nfl-db .nfl-db__val { font-weight: 600; }
+  .nfl-db .nfl-db__val--vegas { fill: var(--accent-hover); }
+  .nfl-db .nfl-db__val--model { fill: var(--purple); }
+  .nfl-db .nfl-db__edge { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.02em; }
+  .nfl-db .nfl-db__edge--pos { fill: color-mix(in srgb, var(--pos) 78%, #000); }
+  .nfl-db .nfl-db__edge--neg { fill: color-mix(in srgb, var(--neg) 88%, #000); }
+  .nfl-db .nfl-db__rec { font-weight: 700; letter-spacing: 0.12em; fill: var(--fg-3); }
+  .nfl-db .nfl-db__rec[data-rec='over'] { fill: color-mix(in srgb, var(--pos) 78%, #000); }
+  .nfl-db .nfl-db__rec[data-rec='under'] { fill: color-mix(in srgb, var(--neg) 88%, #000); }
+
+  /* ---- EPA scatter ---- */
+  .nfl-sc__svg { overflow: visible; }
+  .nfl-sc__svg .nfl-sc__quad text { fill: var(--fg-3); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; }
+  .nfl-sc__svg .nfl-sc__league circle { fill: var(--fg-3); opacity: 0.32; }
+  .nfl-sc__svg .nfl-pt { cursor: pointer; outline: none; }
+  .nfl-sc__svg .nfl-pt__hit { fill: transparent; }
+  .nfl-sc__svg .nfl-pt__dot { fill: var(--accent); stroke: var(--bg-elev); stroke-width: 2.5; transition: r 0.2s var(--ease-out); }
+  .nfl-sc__svg .nfl-pt--SEA .nfl-pt__dot, .nfl-sc__svg .nfl-pt--HOU .nfl-pt__dot { fill: var(--fg); }
+  .nfl-sc__svg .nfl-pt--DEN .nfl-pt__dot, .nfl-sc__svg .nfl-pt--CHI .nfl-pt__dot { fill: var(--hl); }
+  .nfl-sc__svg .nfl-pt--SF .nfl-pt__dot { fill: var(--neg); }
+  .nfl-sc__svg .nfl-pt:hover .nfl-pt__dot, .nfl-sc__svg .nfl-pt.is-active .nfl-pt__dot, .nfl-sc__svg .nfl-pt:focus-visible .nfl-pt__dot { r: 10; }
+  .nfl-sc__svg .nfl-pt:focus-visible .nfl-pt__hit { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 3 3; }
+  .nfl-sc__svg .nfl-pt__label { fill: var(--fg); font-weight: 700; paint-order: stroke; stroke: var(--bg-elev); stroke-width: 3px; stroke-linejoin: round; }
+  .nfl-sc__foot { display: grid; gap: 12px; margin-top: 12px; }
+  .nfl-readout { min-height: 84px; padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: 10px; font-size: 0.86rem; color: var(--fg-2); transition: border-color 0.2s, background 0.2s; }
+  .nfl-readout.is-on { border-style: solid; border-color: var(--accent); background: color-mix(in srgb, var(--accent) 5%, var(--bg-elev)); }
+  .nfl-readout__hint { color: var(--fg-3); }
+  .nfl-readout__head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; color: var(--fg); }
+  .nfl-readout__dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 4px 16px; margin: 0; font-family: var(--font-mono); font-size: 0.78rem; }
+  .nfl-readout__dl dt { color: var(--fg-3); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .nfl-readout__dl dd { margin: 0 0 6px; color: var(--fg); font-variant-numeric: tabular-nums; }
+  .nfl-sc__missing { gap: 8px; }
+
+  /* ---- Dialog extras ---- */
+  .nfl-inj { display: grid; gap: 6px; margin-top: 14px; }
+  .nfl-inj__row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 0.92rem; }
+  .nfl-inj__status { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 0.76rem; color: color-mix(in srgb, var(--pos) 78%, #000); }
+  .nfl-scripts { margin-top: 16px; }
+  .nfl-scripts td code { white-space: nowrap; }
+  .nfl-scripts__chip { margin-left: 8px; padding: 3px 7px; font-size: 0.64rem; }
+  .nfl-cron { margin-top: 12px; margin-bottom: 12px; font-size: 0.8rem; }
+</style>
+
+<style>
+  .nfl { --tint: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .nfl-status { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--fg); }
+  .nfl-status__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pos); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pos) 18%, transparent); }
+  .nfl-stack .chip { background: var(--bg-elev); border-color: var(--line); }
+
+  /* Hero */
+  .nfl-hero { padding-block: clamp(56px, 8vw, 104px) clamp(56px, 8vw, 96px); }
+  .nfl-hero__grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
+  .nfl-hero__copy { max-width: 640px; }
+  .nfl-hero__sep { margin-inline: 2px; color: var(--fg-3); }
+  .nfl-hero__source { margin-top: 22px; font-size: 0.8rem; color: var(--fg-2); letter-spacing: 0.01em; }
+  .nfl-hero__source span { margin-inline: 4px; color: var(--fg-3); }
+  .nfl-hero__note { margin-top: 20px; color: var(--fg-3); max-width: 52ch; }
+  .nfl-hero h1 { margin-top: 4px; }
+  .nfl-hero .lead { margin-top: 22px; }
+
+  /* The slate card */
+  .slate { background: color-mix(in srgb, var(--bg-elev) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-2); overflow: hidden; }
+  .slate__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 22px 14px; }
+  .slate__title { font-size: 1.3rem; margin-top: 6px; }
+  .slate__list { display: grid; }
+  .slate__row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 14px; padding: 12px 22px; border-top: 1px solid var(--line); transition: background 0.2s; }
+  .slate__row:hover, .slate__row:focus-visible { background: var(--tint); }
+  .slate__marks { display: inline-flex; align-items: center; gap: 4px; }
+  .slate__at { font-family: var(--font-mono); font-size: 0.7rem; color: var(--fg-3); }
+  .slate__names { display: grid; min-width: 0; }
+  .slate__names b { font-weight: 600; font-size: 0.93rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
+  .slate__date { font-size: 0.76rem; color: var(--fg-3); }
+  .slate__nums { display: inline-flex; align-items: center; gap: 6px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+  .slate__nums svg { color: var(--fg-3); }
+  .slate__vegas { color: var(--accent-hover); font-weight: 600; }
+  .slate__model { color: var(--purple); font-weight: 600; }
+  .slate__foot { display: flex; gap: 18px; flex-wrap: wrap; padding: 12px 22px 16px; border-top: 1px solid var(--line); font-size: 0.76rem; color: var(--fg-2); background: color-mix(in srgb, var(--bg) 50%, var(--bg-elev)); }
+  .slate__swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: -1px; }
+  .slate__swatch--vegas { background: var(--accent); }
+  .slate__swatch--model { background: var(--purple); }
+
+  /* Summary cards */
+  .nfl-sum { margin-bottom: 16px; }
+  .sum { display: grid; gap: 6px; padding: 20px 22px; align-content: start; }
+  .sum__ico { position: absolute; top: 18px; right: 18px; width: 22px; height: 22px; color: var(--fg-3); }
+  .sum__label { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); }
+  .sum__value { font-family: var(--font-display); font-weight: 500; font-size: 2.3rem; line-height: 1; letter-spacing: -0.03em; }
+  .sum__sub { font-size: 0.84rem; color: var(--fg-2); }
+  .nfl-sum__note { max-width: 78ch; margin-bottom: 28px; }
+  .perf__tag { font-family: var(--font-mono); text-transform: none; letter-spacing: 0.02em; font-size: 0.74rem; }
+  .perf__body { display: grid; gap: 18px; }
+  .perf__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+  .perf__note { font-size: 0.92rem; color: var(--fg-2); max-width: 70ch; }
+
+  /* Games */
+  .nfl-games__legend { margin-top: 24px; }
+
+  /* Charts */
+  .nfl-charts { align-items: start; }
+  .thr { display: grid; grid-template-columns: auto minmax(120px, 1fr) auto; align-items: center; gap: 14px; padding: 12px 14px; margin-bottom: 4px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--bg) 60%, var(--bg-elev)); }
+  .thr__label { display: inline-flex; align-items: center; gap: 10px; font-size: 0.86rem; font-weight: 600; white-space: nowrap; }
+  .thr__value { padding: 3px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-hover); font-size: 0.8rem; font-weight: 600; }
+  .thr__range { width: 100%; accent-color: var(--accent); cursor: pointer; }
+  .thr__reset { justify-self: end; }
+  .thr__reset[hidden] { display: none; }
+  .thr__foot { display: grid; gap: 8px; margin-top: 6px; }
+  .thr__counts { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.8rem; color: var(--fg-2); }
+  .thr__count b { font-size: 1rem; margin-right: 2px; }
+  .thr__count--over b { color: color-mix(in srgb, var(--pos) 78%, #000); }
+  .thr__count--under b { color: color-mix(in srgb, var(--neg) 88%, #000); }
+  .thr__note { color: var(--fg-2); }
+  .thr__note[hidden] { display: none; }
+  .nfl-charts__legend { margin-top: 12px; }
+
+  /* Behind the numbers */
+  .nfl-injury { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 24px; }
+  .nfl-injury__ico { flex: none; width: 22px; height: 22px; color: var(--accent); margin-top: 2px; }
+  .nfl-injury__btn { display: inline; margin-left: 4px; font-weight: 600; cursor: pointer; }
+  .nfl-more .feature { text-align: left; font: inherit; color: inherit; cursor: pointer; align-content: start; }
+  .nfl-more .feature h3 { font-size: 1.1rem; }
+  .feature__cta { margin-top: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 0.86rem; font-weight: 600; color: var(--accent); }
+  .nfl-more .feature:hover .feature__cta { color: var(--accent-hover); }
+
+  /* Pipeline */
+  .nfl-pipe { align-items: start; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); }
+  .nfl-pipe .step h3 { font-size: 1.08rem; }
+  .step__file { display: inline-block; margin-top: 6px; font-size: 0.78rem; color: var(--accent-hover); background: var(--accent-soft); }
+  .nfl-pipe__h { margin-top: 10px; font-size: 1.25rem; }
+  .nfl-pipe__kv { margin-top: 12px; }
+  .nfl-pipe__btn { margin-top: 18px; }
+
+  /* Validation */
+  .nfl-val { margin-bottom: clamp(16px, 2.4vw, 28px); }
+  .nfl-val__card { display: grid; gap: 14px; align-content: start; }
+  .nfl-val__card h3 { margin-top: -4px; }
+  .nfl-val__card--test { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 5%, var(--bg-elev)), var(--bg-elev)); }
+  .nfl-val__stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; padding: 14px 0 6px; }
+  .nfl-val__stats :global(.stat__value) { font-size: clamp(1.7rem, 1.2rem + 1.4vw, 2.4rem); }
+  .nfl-val__row { align-items: stretch; }
+  .nfl-val__callout { display: grid; gap: 10px; align-content: start; padding: 22px 24px; font-size: 0.97rem; }
+
+  /* Others */
+  .nfl-others__head { margin-bottom: 24px; }
+  .nfl-others__title { font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); }
+  .nfl-other { display: grid; gap: 10px; align-content: start; }
+  .nfl-other__tab { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
+  .nfl-other__name { font-family: var(--font-display); font-weight: 550; font-size: 1.1rem; letter-spacing: -0.015em; }
+  .nfl-other__cta { display: inline-flex; align-items: center; gap: 6px; font-size: 0.84rem; font-weight: 600; color: var(--accent); margin-top: 4px; }
+
+  @media (max-width: 960px) {
+    .nfl-hero__grid { grid-template-columns: 1fr; }
+    .perf__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nfl-pipe { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .nfl-hero { padding-top: 40px; }
+    .slate__head, .slate__row, .slate__foot { padding-inline: 16px; }
+    .slate__row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; }
+    .slate__row .nfl-rec { grid-column: 3; }
+    .slate__nums { display: none; }
+    .thr { grid-template-columns: 1fr auto; }
+    .thr__range { grid-column: 1 / -1; }
+    .nfl-val__stats { gap: 14px 16px; }
+  }
+</style>

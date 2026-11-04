@@ -14,6 +14,8 @@ export interface Project {
   tab: string;
   href: string;
   color: string;
+  /** A darker variant of `color` for lines and text on light backgrounds (the home page). */
+  ink: string;
   period: string;
   status: string;
   summary: string;
@@ -31,6 +33,7 @@ export const projects: Project[] = [
     tab: 'NBA Props',
     href: '/projects/nba-player-prop-model',
     color: '#e8622d',
+    ink: '#b9471a',
     period: 'Apr 2026 – present',
     status: 'Live, runs nightly',
     oneLiner: 'A self-grading edge model for NBA player props.',
@@ -55,6 +58,7 @@ export const projects: Project[] = [
     tab: 'Draft Copilot',
     href: '/projects/draft-copilot',
     color: '#a3e635',
+    ink: '#4d7c0f',
     period: 'Aug 2026',
     status: 'Shipped: web app, Chrome extension, MCP server',
     oneLiner: 'A live fantasy-football draft assistant that advises and never picks.',
@@ -78,6 +82,7 @@ export const projects: Project[] = [
     tab: 'Kalshi MLB',
     href: '/projects/kalshi-mlb-market-analysis',
     color: '#2be38b',
+    ink: '#0f8a55',
     period: 'Jul – Sep 2026',
     status: 'Research complete, paper-trading pipeline built',
     oneLiner: 'How prediction-market prices react to every pitch, and a Rust pipeline to trade it on paper.',
@@ -101,6 +106,7 @@ export const projects: Project[] = [
     tab: 'NFL Totals',
     href: '/projects/nfl-game-totals',
     color: '#2563eb',
+    ink: '#1d4ed8',
     period: 'Jan – Aug 2026',
     status: 'Live dashboard',
     oneLiner: 'Projected game totals versus the Vegas line, built on nflfastR play-by-play.',
@@ -124,6 +130,7 @@ export const projects: Project[] = [
     tab: 'Sleeper Client',
     href: '/projects/sleeper-api-client',
     color: '#4fe3ff',
+    ink: '#0e7490',
     period: '2024',
     status: 'Fork, extended',
     oneLiner: 'A typed Java client for the Sleeper fantasy-football API.',

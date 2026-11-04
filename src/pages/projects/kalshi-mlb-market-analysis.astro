@@ -1,6 +1,690 @@
 ---
+/**
+ * Kalshi MLB Market Analysis tab. Trading-terminal design: near-black navy, thin price grid,
+ * green/red price colours, mono numerals, a baseball-diamond line drawing in the hero.
+ * Every number comes from src/data/kalshi.json (the repository's data/ and REPORT.md) or
+ * from the repository files named in DESIGN.md section 6.
+ */
 import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import Dialog from '../../components/Dialog.astro';
+import SectionHead from '../../components/SectionHead.astro';
+import Stat from '../../components/Stat.astro';
+import Diamond from '../../components/kalshi/Diamond.astro';
+import GameTape from '../../components/kalshi/GameTape.astro';
+import { lineChart, barChart, scatterChart, sparkline } from '../../lib/chart';
+import { eventLabel, fmtInt } from '../../lib/format';
+import { heroPathChart, drawable, tagInOrder, cents, signed, times, round } from '../../components/kalshi/charts';
+import { projects, projectById } from '../../data/projects';
+import { url } from '../../site.config';
+import K from '../../data/kalshi.json';
+
+const p = projectById.kalshi;
+const others = projects.filter((x) => x.id !== 'kalshi');
+const snapshotDate = K.snapshotAt.slice(0, 10);
+
+/* ---- Hero: one real moneyline path --------------------------------------- */
+const game = K.games.find((g) => g.code === K.gamePath.code) ?? K.games[0];
+const series = K.gamePath.series;
+const plays = K.gamePath.scoringPlays;
+const openP = series[0].p, closeP = series[series.length - 1].p;
+const heroAria = `${K.gamePath.side} moneyline yes price in cents by minute, ${K.gamePath.label}: ${openP} cents when the market window opened, ${closeP} at the close, with ${plays.length} scoring plays marked`;
+const heroDesktop = heroPathChart({ id: 'kx-hero-d', width: 1100, height: 380, series, plays, ariaLabel: heroAria });
+const heroPhone = heroPathChart({ id: 'kx-hero-m', width: 390, height: 300, fontSize: 12, pad: { t: 50, r: 50, b: 34, l: 10 }, series, plays, ariaLabel: heroAria });
+const heroData = JSON.stringify({ series, plays, side: K.gamePath.side, away: game.away, home: game.home });
+const playRows = plays.map((s, i) => {
+  const [a, h] = s.score.split('-');
+  return { n: i + 1, when: `${s.half === 'top' ? 'T' : 'B'}${s.inning}`, event: s.event, rbi: s.rbi, score: `${game.away} ${a}, ${game.home} ${h}`, home: s.half === 'bottom', m: s.m };
+});
+// Final scores from data/plays_<game>.csv in the repository (last row, away_score and home_score).
+const finals: Record<string, { away: number; home: number }> = {
+  DETNYY: { away: 9, home: 3 }, PITPHI: { away: 0, home: 8 }, TBKC: { away: 10, home: 4 },
+  MINHOU: { away: 4, home: 6 }, SDCHC: { away: 7, home: 9 }, LAASEA: { away: 3, home: 8 },
+};
+
+/* ---- Section 1: how prices react ----------------------------------------- */
+type SummaryRow = (typeof K.summary)[number];
+const order = ['home_run', 'scoring_play', 'walk_hbp', 'single', 'xbh', 'strikeout', 'out_in_play'];
+const byGroup = Object.fromEntries(K.summary.map((r) => [r.group, r])) as Record<string, SummaryRow>;
+const rows = order.map((g) => byGroup[g]).filter(Boolean);
+// The volume column is the median ratio per event type (analyze.py). REPORT.md gives 4.4× for any
+// scoring play on that definition, so that row is quoted from the report.
+const volSpike = (r: SummaryRow): number => (r.group === 'scoring_play' ? 4.4 : r.volRatio);
+const pText = (v: number | null): string => (v == null ? 'n/a' : v < 0.001 ? '<0.001' : v.toFixed(3));
+const shortLabel: Record<string, string> = { home_run: 'Home run', scoring_play: 'Scoring play', walk_hbp: 'Walk/HBP', single: 'Single', xbh: 'Double/triple', strikeout: 'Strikeout', out_in_play: 'Out in play' };
+const immVals = rows.map((r) => r.imm), driftVals = rows.map((r) => r.drift);
+const immColors = immVals.map((v) => (v >= 0 ? 'var(--pos)' : 'var(--neg)'));
+const tagNegBars = (svg: string, nSer: number, vals: number[][]) => tagInOrder(svg, '<rect class="ch-bar"', (i) => (vals[i % nSer][Math.floor(i / nSer)] < 0 ? 'data-neg="1"' : ''));
+const reactBarsAria = 'Mean immediate and drift reaction in cents by event type: home run, scoring play, walk or HBP, single, double or triple, strikeout, out in play';
+const reactBarsD = tagNegBars(drawable(barChart({
+  width: 760, height: 330, categories: rows.map((r) => shortLabel[r.group]),
+  series: [{ values: immVals, color: immColors, label: 'Immediate' }, { values: driftVals, color: 'color-mix(in srgb, var(--hl) 82%, transparent)', label: 'Drift' }],
+  valueFmt: (v) => signed(v, 1), ariaLabel: reactBarsAria, fontSize: 11, gap: 0.34,
+})), 2, [immVals, driftVals]);
+const reactBarsM = tagNegBars(drawable(barChart({
+  width: 390, height: 460, horizontal: true, pad: { l: 100, r: 52 }, categories: rows.map((r) => shortLabel[r.group]),
+  series: [{ values: immVals, color: immColors }, { values: driftVals, color: 'color-mix(in srgb, var(--hl) 82%, transparent)' }],
+  valueFmt: (v) => signed(v, 1), ariaLabel: reactBarsAria, fontSize: 12, gap: 0.3,
+})), 2, [immVals, driftVals]);
+
+/* ---- Section 2: reaction path -------------------------------------------- */
+const rpKeys = ['home_run', 'scoring_play', 'single', 'walk_hbp', 'strikeout', 'out_in_play'];
+const rpColors: Record<string, string> = {
+  home_run: 'var(--accent)', scoring_play: 'var(--hl)',
+  single: 'color-mix(in srgb, var(--accent) 42%, var(--fg))', walk_hbp: 'color-mix(in srgb, var(--hl) 42%, var(--fg))',
+  strikeout: 'var(--neg)', out_in_play: 'color-mix(in srgb, var(--neg) 50%, var(--fg-3))',
+};
+const rpSeriesData = K.reactionPath.series as Record<string, { n: number; mean: number[] }>;
+const minutes = K.reactionPath.minutes;
+const rpSeries = rpKeys.map((k) => ({ key: k, n: rpSeriesData[k].n, color: rpColors[k], points: minutes.map((m, i) => ({ x: m, y: rpSeriesData[k].mean[i] })) }));
+const minuteFmt = (v: number) => (v > 0 ? `+${v}` : v < 0 ? `−${Math.abs(v)}` : '0');
+const rpAria = 'Average price path in cents from three minutes before to eight minutes after a play, for home runs, scoring plays, singles, walks, strikeouts and outs in play';
+const reactionPath = (w: number, h: number, fs: number, pad: { t?: number; r?: number; b?: number; l?: number }) =>
+  tagInOrder(tagInOrder(drawable(lineChart({
+    width: w, height: h, fontSize: fs, pad,
+    series: rpSeries.map((s) => ({ points: s.points, color: s.color, width: s.key === 'home_run' || s.key === 'scoring_play' ? 2.6 : 1.8, dots: true })),
+    zeroLine: true, xTicks: 12, xFmt: minuteFmt, yFmt: (v) => `${signed(v, 0)}¢`,
+    markers: [{ x: 0, label: 'play ends', color: 'var(--fg-3)' }, { x: 2, label: 'drift window', color: 'var(--fg-3)' }, { x: 7, color: 'var(--fg-3)' }],
+    ariaLabel: rpAria,
+  })), '<path class="ch-line"', (i) => `data-series="${rpKeys[i]}"`), '<circle class="ch-dot"', (i) => `data-series="${rpKeys[Math.floor(i / minutes.length)]}"`);
+const reactionPathD = reactionPath(760, 360, 11, { r: 22, l: 50 });
+const reactionPathM = reactionPath(390, 300, 12, { r: 14, l: 44, b: 32 });
+const hrPath = rpSeriesData.home_run.mean, scPath = rpSeriesData.scoring_play.mean;
+const at = (arr: number[], minute: number) => arr[minutes.indexOf(minute)];
+
+/* ---- Section 3: momentum ------------------------------------------------- */
+const mo = K.momentum.points;
+const scoringN = mo.filter((q) => q.scoring).length;
+const moPts = mo.map((q) => ({ x: q.imm, y: q.drift, color: q.scoring ? 'var(--accent)' : 'color-mix(in srgb, var(--fg-2) 60%, transparent)', r: q.scoring ? 4.6 : 3.4 }));
+const moAria = `Scatter of ${mo.length} events with an immediate move of at least 3 cents: immediate move against the drift that followed, with a trend line sloping upward`;
+const momentumScatter = (w: number, h: number, fs: number) => tagInOrder(drawable(scatterChart({
+  width: w, height: h, fontSize: fs, points: moPts, trend: true, trendColor: 'var(--hl)', quadrants: true,
+  xLabel: 'Immediate move, minutes 0 to 2 (¢)', yLabel: 'Drift, minutes 2 to 7 (¢)', xFmt: (v) => signed(v, 0), yFmt: (v) => signed(v, 0), ariaLabel: moAria,
+})), '<circle class="ch-pt"', (i) => `data-scoring="${mo[i].scoring ? 1 : 0}" data-imm="${mo[i].imm}" data-drift="${mo[i].drift}"`);
+const momentumD = momentumScatter(720, 400, 11);
+const momentumM = momentumScatter(390, 330, 12);
+const asym = K.asymmetry;
+
+/* ---- Section 4: speed and leverage --------------------------------------- */
+const innings = K.byInning;
+const innMax = Math.max(...innings.map((b) => b.meanAbsImm));
+const hrSpark = drawable(sparkline(minutes.map((m, i) => ({ x: m, y: hrPath[i] })), { width: 220, height: 64, color: 'var(--accent)', area: true, zero: true, ariaLabel: 'Average home-run price path from minute −3 to +8' }));
+const liq = K.liquidity;
+
+/* ---- Pipeline facts (README.md, crate sources, deploy/README.md) ---------- */
+const flow = [
+  { kind: 'Sources', nodes: [
+    { name: 'Kalshi REST and WebSocket', text: '1-minute candles, the raw trade tape, order books and fills for KXMLBGAME and KXMLBTOTAL markets.' },
+    { name: 'MLB Stats API (GUMBO)', text: 'Play-by-play with pitch-level decisive timestamps and base-out state.' },
+  ] },
+  { kind: 'collector crate', nodes: [{ name: 'Season-scale collection', text: 'Async, about 8 requests per second under the public limit of about 10, resumable (existing files are skipped). 882 games and 66k+ events.' }] },
+  { kind: 'common crate', nodes: [{ name: 'Shared clients and the win-probability engine', text: 'Auth signing, read-only portfolio reads, RE24 run expectancy plus season team ratings with logistic calibration, unit-tested against the Python reference, and the risk layer.' }] },
+  { kind: 'paper-trader crate', nodes: [{ name: 'Autonomous paper trading', text: 'Fair values on every play, EV-gated maker entries, queue-accurate fill simulation, fee-aware exits, adaptive thresholds, layered risk controls.' }] },
+  { kind: 'Operations', nodes: [
+    { name: 'tracker_server.py on :8787', text: 'Self-refreshing dashboard: Today, 1W, 1M, YTD and All tabs, per-day attribution, open positions, polled every 5 s.' },
+    { name: 'launchd agents', text: 'Trader and tracker run from an isolated live clone on a live-execution branch; deploy_once.sh swaps in a freshly built binary.' },
+  ] },
+];
 ---
-<Base title="kalshi-mlb-market-analysis placeholder" theme="kalshi">
-  <section class="hero"><div class="container"><span class="kicker"><span class="dot"></span> kalshi theme</span><h1>kalshi-mlb-market-analysis</h1><p class="lead">Placeholder page, theme check only.</p></div></section>
+<Base title="Kalshi MLB Market Analysis · Sid Subramanian" description={`${p.oneLiner} An event study of ${fmtInt(K.pilot.events)} plate-appearance events across ${K.pilot.games} games, and a Rust collector and paper trader built on what it found.`} theme="kalshi">
+  <div class="kx">
+    <div class="container">
+      <div class="proj-bar">
+        <div class="row"><span class="badge badge--soft">{p.period}</span><span class="muted">{p.status}</span></div>
+        <div class="cluster" style="--cluster:6px">{p.stack.map((s) => <span class="chip chip--outline">{s}</span>)}</div>
+        <div class="proj-bar__links">
+          {p.links.map((l) => <a class="btn btn--ghost btn--sm" href={l.url}><Icon name={l.kind === 'repo' ? 'github' : 'book'} size={14} /> {l.label}</a>)}
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. Hero -->
+    <section class="hero kx-hero grain" aria-labelledby="kx-title">
+      <div class="hero__bg kx-hero__bg" aria-hidden="true">
+        <div class="kx-hero__grid"></div>
+        <div class="kx-hero__diamond draw" data-parallax="0.08"><Diamond /></div>
+      </div>
+      <div class="container">
+        <div class="kx-hero__top">
+          <span class="kicker reveal"><span class="dot"></span> Event study · Rust paper trader · {p.period}</span>
+          <h1 id="kx-title" class="reveal" style="--i:1">Kalshi MLB Market Analysis</h1>
+          <p class="lead reveal" style="--i:2">{p.oneLiner}</p>
+          <p class="kx-hero__sub reveal" style="--i:3">A pilot event study on the June 30 2026 slate measured how moneyline and totals prices moved around every plate appearance. The finding, momentum rather than overreaction, became the thesis for a Rust collector and paper trader that ran across the season.</p>
+          <div class="kx-tiles reveal" style="--i:4">
+            <div class="kx-tile"><span class="kx-tile__label">Games in the pilot</span><span class="kx-tile__value" data-count={K.pilot.games} data-format="int">{K.pilot.games}</span><span class="kx-tile__sub">Jun 30 2026, 1-minute candles</span></div>
+            <div class="kx-tile"><span class="kx-tile__label">Plate-appearance events</span><span class="kx-tile__value" data-count={K.pilot.events} data-format="int">{K.pilot.events}</span><span class="kx-tile__sub">{K.pilot.scoringEvents} of them scoring plays</span></div>
+            <div class="kx-tile"><span class="kx-tile__label">Games collected</span><span class="kx-tile__value" data-count={882} data-format="int">882</span><span class="kx-tile__sub">full season, Rust collector</span></div>
+            <div class="kx-tile"><span class="kx-tile__label">Events collected</span><span class="kx-tile__value"><span data-count={66000} data-format="k">66k</span>+</span><span class="kx-tile__sub">candles, trades, play-by-play</span></div>
+          </div>
+          <div class="hero__actions reveal" style="--i:5">
+            {p.links.map((l, i) => <a class:list={['btn', i === 0 ? 'btn--primary' : 'btn--ghost']} href={l.url}><Icon name={l.kind === 'repo' ? 'github' : 'book'} size={16} /> {l.label}</a>)}
+            <button class="btn btn--soft" type="button" data-dialog-open="kx-method"><Icon name="info" size={16} /> How the study was built</button>
+          </div>
+        </div>
+
+        <div class="kx-panel reveal reveal--scale" style="--i:3" id="kx-hero-chart">
+          <div class="kx-panel__head">
+            <div class="kx-panel__id">
+              <span class="kx-ticker">{K.gamePath.ticker}</span>
+              <span class="kx-panel__label">{K.gamePath.label} · {K.gamePath.side} to win, yes price</span>
+            </div>
+            <p class="kx-readout" id="kx-readout" aria-live="polite"><span class="kx-readout__k">opened</span> <b>{openP}¢</b> <span class="kx-readout__sep">·</span> <span class="kx-readout__k">settled</span> <b class="kx-pos">{closeP}¢ yes</b> <span class="kx-readout__hint">Hover or touch the chart to read any minute</span></p>
+          </div>
+          <div class="kx-panel__body draw">
+            <div class="kx-ch kx-ch--d" set:html={heroDesktop} />
+            <div class="kx-ch kx-ch--m" set:html={heroPhone} />
+          </div>
+          <div class="kx-plays" aria-label="Scoring plays in the game">
+            {playRows.map((r) => <span class="kx-play" style={`--c:${r.home ? 'var(--pos)' : 'var(--neg)'}`}><span class="kx-play__n">{r.n}</span><span class="kx-play__when">{r.when}</span><span>{r.event}, {r.rbi} RBI</span><span class="kx-play__score">{r.score}</span></span>)}
+          </div>
+          <script type="application/json" id="kx-hero-data" set:html={heroData} />
+        </div>
+      </div>
+      <GameTape games={K.games} finals={finals} />
+    </section>
+
+    <!-- 2. How prices react -->
+    <section class="section kx-sec" id="reactions">
+      <div class="container">
+        <SectionHead eyebrow="01 · Event study" title="How prices react to a plate appearance" lead="Every one of the 455 plate appearances in the six games was aligned to the candle grid of its game's moneyline market. Signs are from the batting team's perspective: a positive number means the price moved toward the team that was hitting." />
+        <div class="table-wrap reveal">
+          <table class="table kx-table">
+            <thead><tr><th>Event</th><th class="num">n</th><th class="num">Immediate, 0 to 2 min</th><th class="num">Drift, 2 to 7 min</th><th class="num">Volume spike</th><th class="num">Totals market, immediate</th><th class="num">p</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr class:list={{ 'kx-table__hl': r.group === 'scoring_play' }}>
+                  <td><span class="kx-evlabel"><span class="kx-evdot" style={`--c:${r.imm >= 0 ? 'var(--pos)' : 'var(--neg)'}`}></span>{eventLabel(r.group)}</span></td>
+                  <td class="num">{r.n}</td>
+                  <td class:list={['num', r.imm >= 0 ? 'kx-pos' : 'kx-neg']}>{cents(r.imm, 2)}</td>
+                  <td class:list={['num', r.drift > 0 ? 'kx-pos' : r.drift < 0 ? 'kx-neg' : '']}>{cents(r.drift, 2)}</td>
+                  <td class="num">{times(volSpike(r))}</td>
+                  <td class:list={['num', r.totImm >= 0 ? 'kx-pos' : 'kx-neg']}>{cents(r.totImm, 2)}</td>
+                  <td class="num muted">{pText(r.immP)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted kx-foot reveal">Cents, moneyline market, batting team's perspective. Volume spike is the median ratio of the three-minute volume after a play to the game's baseline; the scoring-play row is quoted from REPORT.md. p is a one-sample t-test of the immediate move against zero. Totals column: change in the over price.</p>
+
+        <div class="kx-split">
+          <div class="chart-card draw reveal kx-bars-anim" style="--i:1">
+            <div class="chart-card__head"><span class="chart-card__title">Immediate reaction and the drift that followed</span><span class="chart-card__note">mean cents · n = 455 events</span></div>
+            <div class="kx-ch kx-ch--d" set:html={reactBarsD} />
+            <div class="kx-ch kx-ch--m kx-bars-anim--h" set:html={reactBarsM} />
+            <div class="legend" style="margin-top:12px"><span class="legend__item"><span class="legend__swatch" style="--c:var(--pos)"></span>Immediate, positive</span><span class="legend__item"><span class="legend__swatch" style="--c:var(--neg)"></span>Immediate, negative</span><span class="legend__item"><span class="legend__swatch" style="--c:var(--hl)"></span>Drift, 2 to 7 min</span></div>
+          </div>
+          <div class="stack kx-notes" style="--stack:12px">
+            <div class="card card--sunk kx-note reveal" style="--i:2"><Icon name="trending-up" /><div><b>Totals react even harder.</b><p>A scoring play moves the over about +12¢ immediately, and every out applies steady scoreless pressure of about −2¢.</p></div></div>
+            <div class="card card--sunk kx-note reveal" style="--i:3"><Icon name="bolt" /><div><b>Outs are priced instantly.</b><p>A strikeout or an out in play costs the batting team about 1.5¢ at once and then nothing more: drift after an out is close to zero.</p></div></div>
+            <div class="card card--sunk kx-note reveal" style="--i:4"><Icon name="trending-down" /><div><b>Rallies keep going.</b><p>Home runs, walks and singles all show positive drift after the immediate move. The one exception, doubles and triples, has ten events and a p-value of 0.088.</p></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Reaction path -->
+    <section class="section section--bordered kx-sec kx-sec--sunk" id="path">
+      <div class="container">
+        <SectionHead eyebrow="02 · Minute by minute" title="The reaction path" lead="The average price path around each kind of play, from three minutes before to eight minutes after. Minute 0 is the first candle boundary after the play ends; the baseline is the candle two minutes earlier, so every path passes through zero at −2." />
+        <div class="chart-card reveal" id="kx-reaction">
+          <div class="chart-card__head">
+            <span class="chart-card__title">Average change in the batting team's price</span>
+            <span class="chart-card__note">cents · click a series to isolate it</span>
+          </div>
+          <div class="kx-legend" role="group" aria-label="Series">
+            {rpSeries.map((s) => <button class="kx-legend__chip" type="button" data-series-toggle={s.key} aria-pressed="true" style={`--c:${s.color}`}><span class="kx-legend__swatch"></span>{eventLabel(s.key)} <span class="kx-legend__n">n={s.n}</span></button>)}
+            <button class="kx-legend__reset" type="button" data-series-reset hidden>Show all</button>
+          </div>
+          <div class="draw">
+            <div class="kx-ch kx-ch--d" set:html={reactionPathD} />
+            <div class="kx-ch kx-ch--m" set:html={reactionPathM} />
+          </div>
+        </div>
+        <div class="grid grid--3 kx-path-notes">
+          <div class="reveal" style="--i:1"><span class="kx-kv__k">Home run</span><p><b class="mono kx-pos">{cents(at(hrPath, 0))}</b> at minute 0, <b class="mono kx-pos">{cents(at(hrPath, 8))}</b> by minute +8. The step happens in the same minute as the play.</p></div>
+          <div class="reveal" style="--i:2"><span class="kx-kv__k">Any scoring play</span><p><b class="mono kx-pos">{cents(at(scPath, 2))}</b> two minutes after the play, <b class="mono kx-pos">{cents(at(scPath, 8))}</b> at eight. The move keeps extending after the first two minutes.</p></div>
+          <div class="reveal" style="--i:3"><span class="kx-kv__k">Strikeout and out in play</span><p>About <b class="mono kx-neg">{cents(at(rpSeriesData.strikeout.mean, 2))}</b> and <b class="mono kx-neg">{cents(at(rpSeriesData.out_in_play.mean, 2))}</b> at minute +2, then a flat line: the bad news is fully priced on arrival.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Momentum, not overreaction -->
+    <section class="section section--bordered kx-sec" id="momentum">
+      <div class="container">
+        <SectionHead eyebrow="03 · The finding" title="Momentum, not overreaction" lead="The classic trade in a market that jumps on news is to fade the jump. Here that trade loses. On the big moves, the immediate reaction and the drift after it point the same way." />
+        <div class="kx-split kx-split--mo" id="kx-momentum">
+          <div class="chart-card kx-tip-host reveal" style="--i:1">
+            <div class="chart-card__head">
+              <span class="chart-card__title">Immediate move against the drift that followed</span>
+              <button class="kx-toggle" type="button" data-hl-toggle aria-pressed="false"><span class="kx-toggle__dot"></span>Highlight scoring plays</button>
+            </div>
+            <div class="kx-mo draw">
+              <div class="kx-ch kx-ch--d" set:html={momentumD} />
+              <div class="kx-ch kx-ch--m" set:html={momentumM} />
+            </div>
+            <div class="kx-tip mono" hidden></div>
+            <div class="legend" style="margin-top:10px"><span class="legend__item"><span class="legend__swatch legend__swatch--dot" style="--c:var(--accent)"></span>Scoring play ({scoringN})</span><span class="legend__item"><span class="legend__swatch legend__swatch--dot" style="--c:var(--fg-3)"></span>Other event ({mo.length - scoringN})</span><span class="legend__item"><span class="legend__swatch" style="--c:var(--hl)"></span>Least-squares trend</span></div>
+          </div>
+          <div class="stack" style="--stack:20px">
+            <div class="stat-row kx-stat-row reveal" style="--i:2">
+              <Stat label="Pearson ρ" value={K.momentum.rho.toFixed(3)} count={K.momentum.rho} format="dec3" tone="accent" sub="immediate vs drift" />
+              <Stat label="p-value" value={K.momentum.p.toFixed(3)} count={K.momentum.p} format="dec3" sub="two-sided" />
+              <Stat label="Big moves" value={String(K.momentum.n)} count={K.momentum.n} format="int" sub="|immediate| ≥ 3¢" />
+            </div>
+            <div class="kx-bars reveal" style="--i:3" aria-label="Gross result per event of riding or fading a big move">
+              <span class="kx-bars__title">Per event, gross, cents</span>
+              <div class="kx-bar kx-bar--div"><span class="kx-bar__label">Ride the move</span><span class="kx-bar__track"><span class="kx-bar__fill is-pos" style={`--w:${(K.momentum.rideCents / 1.2) * 50}%`}></span></span><span class="kx-bar__val mono kx-pos">{cents(K.momentum.rideCents, 2)}</span></div>
+              <div class="kx-bar kx-bar--div"><span class="kx-bar__label">Fade the move</span><span class="kx-bar__track"><span class="kx-bar__fill is-neg" style={`--w:${(Math.abs(K.momentum.fadeCents) / 1.2) * 50}%`}></span></span><span class="kx-bar__val mono kx-neg">{cents(K.momentum.fadeCents, 2)}</span></div>
+              <p class="small muted">Riding keeps +0.37¢ per event after half the spread.</p>
+            </div>
+            <div class="kx-bars reveal" style="--i:4" aria-label="Average drift after an up move and after a down move">
+              <span class="kx-bars__title">Average drift after the immediate move</span>
+              <div class="kx-bar"><span class="kx-bar__label">After an up move <small>n = {asym.nUp}</small></span><span class="kx-bar__track"><span class="kx-bar__fill is-pos" style="--w:100%"></span></span><span class="kx-bar__val mono kx-pos">{cents(asym.afterUp, 2)}</span></div>
+              <div class="kx-bar"><span class="kx-bar__label">After a down move <small>n = {asym.nDown}</small></span><span class="kx-bar__track"><span class="kx-bar__fill is-flat" style={`--w:${(asym.afterDown / asym.afterUp) * 100}%`}></span></span><span class="kx-bar__val mono muted">{cents(asym.afterDown, 2)}</span></div>
+              <p class="small muted">Good news continues; bad news is already in the price.</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout kx-callout reveal" style="--i:5">
+          <Icon name="target" />
+          <p><b>The cleanest entry the pilot found:</b> buy the batting team, or the over, in the first minute or two after a scoring play. On average the position gained another 2 to 3¢ over the next five to six minutes. Whether that survives fees and fills is the question the pipeline below was built to answer.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Speed and leverage -->
+    <section class="section section--bordered kx-sec kx-sec--sunk" id="speed">
+      <div class="container">
+        <SectionHead eyebrow="04 · Speed and leverage" title="A narrow window, and a deep enough book" lead="The reaction is fast, strongest early in the game, and happens in a market that is liquid enough to trade at a one-cent spread." />
+        <div class="grid grid--3 kx-speed">
+          <div class="card reveal" style="--i:1">
+            <span class="kx-kv__k">Reaction speed</span>
+            <div class="kx-big"><span class="mono" data-count={87} data-format="pct">87%</span></div>
+            <p class="kx-big__sub">of a home run's seven-minute move is complete within two minutes (the median event). Much of it lands in the same minute as the play.</p>
+            <div class="kx-spark draw" set:html={hrSpark} />
+            <p class="small muted">Average home-run path, −3 to +8 min. A live strategy has to act in seconds, from pitch-level feeds rather than minute candles.</p>
+          </div>
+          <div class="card reveal" style="--i:2">
+            <span class="kx-kv__k">Leverage by inning</span>
+            <div class="kx-bars kx-bars--tight reveal" style="--i:3" aria-label="Mean absolute immediate reaction by inning bucket">
+              <span class="kx-bars__title">Mean |immediate| reaction</span>
+              {innings.map((b, i) => <div class="kx-bar"><span class="kx-bar__label">Innings {b.bucket} <small>n = {b.n}</small></span><span class="kx-bar__track"><span class:list={['kx-bar__fill', i === 0 ? 'is-pos' : i === 1 ? 'is-mid' : 'is-flat']} style={`--w:${(b.meanAbsImm / innMax) * 100}%`}></span></span><span class="kx-bar__val mono">{round(b.meanAbsImm, 1).toFixed(1)}¢</span></div>)}
+            </div>
+            <p class="kx-big__sub">Early innings move prices most. By the seventh many prices are already near 0 or 100¢ and a single play changes little.</p>
+          </div>
+          <div class="card reveal" style="--i:3">
+            <span class="kx-kv__k">Liquidity at event time</span>
+            <dl class="kv kx-kv">
+              <dt>Median spread</dt><dd class="mono">{round(liq.medianSpread, 0)}¢</dd>
+              <dt>Median 3-min volume</dt><dd class="mono">${fmtInt(Math.round(liq.medianVol3min))}</dd>
+              <dt>vs game baseline</dt><dd class="mono">{times(liq.medianVolRatio)}</dd>
+            </dl>
+            <p class="kx-big__sub">Volume roughly doubles around a play and the book stays tight, so the edge is not an artefact of an empty market. It is small, though, which is why fees decide everything.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Caveats -->
+    <section class="section section--bordered kx-sec" id="caveats">
+      <div class="container">
+        <SectionHead eyebrow="05 · Caveats" title="What the pilot cannot tell you" lead="REPORT.md lists its own limits before its next steps. They are the reason the project did not stop at the finding." />
+        <div class="grid grid--2 kx-caveats">
+          <div class="card kx-caveat reveal" style="--i:1"><Icon name="calendar" /><div><b>One slate.</b><p>One day and six games. The result needed the full-season pass before anyone should trust it, which is what the collector was built to provide.</p></div></div>
+          <div class="card kx-caveat reveal" style="--i:2"><Icon name="clock" /><div><b>Timestamps leak.</b><p>The MLB endTime stamp lags the decisive moment by 30 to 60 seconds (a home run is known before the play officially ends), so part of the reaction lands in the "pre" candle and the measured magnitudes understate the truth. One eighth-inning home run even sign-flipped.</p></div></div>
+          <div class="card kx-caveat reveal" style="--i:3"><Icon name="layers" /><div><b>Windows overlap.</b><p>Plays arrive every two to three minutes, so a seven-minute drift window contains the next play. Drift estimates carry neighbour contamination.</p></div></div>
+          <div class="card kx-caveat reveal" style="--i:4"><Icon name="shield" /><div><b>Fees eat the edge.</b><p>Kalshi taker fees are quadratic, about 1.75¢ at a 50¢ price, more than the +0.37¢ ride edge. Execution must be maker-side: resting limit orders, which carry no fee. That constraint shaped the whole paper trader.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. From study to system -->
+    <section class="section section--bordered kx-sec kx-sec--sunk" id="system">
+      <div class="container">
+        <SectionHead eyebrow="06 · From study to system" title="A Rust workspace to collect the season and trade it on paper" lead="Three crates, about 2,300 lines of Rust, with about 1,300 lines of Python for the research and the dashboard. The trader simulates fills against live order books and never places an order." />
+        <div class="kx-flow" aria-label="Pipeline">
+          {flow.map((row, ri) => (
+            <>
+              {ri > 0 && <div class="kx-flow__link reveal" style={`--i:${ri}`}><span></span></div>}
+              <div class="kx-flow__row" style={`--cols:${row.nodes.length}`}>
+                {row.nodes.map((nd, ni) => <div class="kx-node reveal" style={`--i:${ri + ni}`}><span class="kx-node__kind">{row.kind}</span><b>{nd.name}</b><p>{nd.text}</p></div>)}
+              </div>
+            </>
+          ))}
+        </div>
+
+        <div class="grid grid--3 kx-features">
+          <div class="feature reveal" style="--i:1"><Icon name="chart" /><h3>Win-probability engine</h3><p>Fair values from game state: RE24 base-out run expectancy, season team ratings and a logistic calibration layer. The Rust port is unit-tested against the Python reference in wp_model.py.</p></div>
+          <div class="feature reveal" style="--i:2"><Icon name="database" /><h3>Maker entries, honest fills</h3><p>Entries are EV-gated resting orders so no taker fee is paid. A fill is credited only after the simulation tracks the displayed queue ahead of the order; exits are fee-aware and thresholds adapt.</p></div>
+          <div class="feature reveal" style="--i:3"><Icon name="shield" /><h3>Layered risk controls</h3><p>Single-clip sizing, one side per game, salvage exits, per-market loss stops and feed-freshness guards in the trader; a pure risk module with hard caps for anything that would ever go live.</p><button class="btn btn--soft btn--sm" type="button" data-dialog-open="kx-risk"><Icon name="lock" size={14} /> Risk layer defaults</button></div>
+          <div class="feature reveal" style="--i:4"><Icon name="refresh" /><h3>Backtest and training</h3><p>wp_model.py backtests model-versus-market gaps across the 882 collected games, net of fees. train.py fits HistGradientBoosting to post-event drift over 1, 3, 5 and 10-minute horizons with weekly walk-forward validation.</p></div>
+          <div class="feature reveal" style="--i:5"><Icon name="cpu" /><h3>Runs itself</h3><p>launchd agents run the trader and the tracker from an isolated clone on a live-execution branch, so a build or branch switch in the dev tree can never yank the running binary out from under it.</p></div>
+          <div class="feature reveal" style="--i:6"><Icon name="code" /><h3>Specified, not built: the executor</h3><p>Signing, read-only account views, fill parsing and the risk book exist and are tested. The layer that would send orders is a written contract, deliberately left to a human operator.</p><button class="btn btn--soft btn--sm" type="button" data-dialog-open="kx-exec"><Icon name="book" size={14} /> Live execution spec</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Research honesty -->
+    <section class="section section--bordered kx-sec" id="honesty">
+      <div class="container">
+        <div class="kx-split kx-split--honest">
+          <div>
+            <SectionHead eyebrow="07 · Research honesty" title="Edges that were rejected" lead="Every strategy change was gated on either the 882-game backtest or live trade-pattern analysis, and the audits that said no are kept alongside the ones that worked." />
+            <div class="stack" style="--stack:12px">
+              <div class="card card--sunk kx-note reveal" style="--i:1"><Icon name="search" /><div><b>The survivorship-bias audit invalidated the original edge.</b><p>The season backtest in wp_model.py includes an audit for survivorship bias. It showed the project's original event-drift strategy, the one the pilot suggested, did not hold up. It was dropped rather than tuned until it passed.</p></div></div>
+              <div class="card card--sunk kx-note reveal" style="--i:2"><Icon name="close" /><div><b>Recency and streak weighting were rejected.</b><p>Both were proposed as improvements to the ratings. The data said no, and they are not in the engine.</p></div></div>
+              <div class="card card--sunk kx-note reveal" style="--i:3"><Icon name="lock" /><div><b>Paper only, by construction.</b><p>The paper trader contains no order-placement code. The live-execution layer is a specification with a tested risk library behind it, and even that spec requires a two-key turn to point at production.</p></div></div>
+            </div>
+          </div>
+          <div class="kx-prov">
+            <figure class="shot kx-shot reveal reveal--scale" style="--i:2">
+              <img src={url('/images/projects/kalshi-reaction-analysis.png')} width="1950" height="750" loading="lazy" decoding="async" alt="Two matplotlib panels from the repository: average Kalshi moneyline price change in cents from minute −3 to +8 for six event types, and the HOU moneyline price path for MIN at HOU on June 30 2026 with the scoring plays marked" />
+              <figcaption>reaction_analysis.png, the figure analyze.py writes from the pilot's event study. The charts on this page are the same data redrawn from the JSON snapshot ({snapshotDate}).</figcaption>
+            </figure>
+            <div class="kx-links reveal" style="--i:3">
+              {p.links.map((l) => <a class="kx-link" href={l.url}><Icon name={l.kind === 'repo' ? 'github' : 'book'} /><span><b>{l.label}</b><span class="small muted">{l.url.replace(/^https?:\/\//, '')}</span></span><Icon name="arrow-up-right" size={16} class="ico kx-link__go" /></a>)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. More from the portfolio -->
+    <section class="section section--tight section--bordered kx-more">
+      <div class="container">
+        <div class="between" style="margin-bottom:22px"><span class="eyebrow">More from the portfolio</span><a class="link small" href={url('/')}>All projects</a></div>
+        <div class="grid grid--4">
+          {others.map((o, i) => <a class="card card--hover kx-more__card reveal" style={`--swatch:${o.color};--i:${i}`} href={url(o.href)}><span class="kx-more__tab"><span class="swatch"></span>{o.tab}</span><b>{o.name}</b><p class="small muted">{o.oneLiner}</p><span class="kx-more__go"><Icon name="arrow-right" size={16} /></span></a>)}
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Dialogs -->
+  <Dialog id="kx-method" title="How the study was built" eyebrow="analyze.py · data/">
+    <p><b>Data.</b> The June 30 2026 slate: six games, 1-minute candlesticks for each game's moneyline (KXMLBGAME) and totals (KXMLBTOTAL) market from Kalshi, and play-by-play from the MLB Stats API. 455 plate-appearance events, each aligned to the candle grid by the play's end time. Per-event results are in <code>data/event_study.csv</code>, the per-type summary in <code>data/event_summary.csv</code>.</p>
+    <p><b>Windows.</b> Minute 0 is the first candle boundary at or after the play ends. The baseline is the candle that closed one minute before it; immediate is the change from the baseline to two minutes after; drift is the change from two to seven minutes after. Signs are from the batting team's perspective, so a positive number is the market moving toward the team at bat. The reaction-path chart uses the candle two minutes before as its baseline, as the repository figure does.</p>
+    <p><b>Volume and spread.</b> The volume spike is the three-minute volume after the play relative to the game's baseline (three times the median per-minute volume), summarised as the median ratio per event type. Spread is the mean ask minus bid over the same three minutes.</p>
+    <p><b>Tests.</b> p-values are one-sample t-tests of the immediate move against zero. The momentum test is the Pearson correlation between the immediate move and the drift on events with an immediate move of at least 3¢ in either direction.</p>
+    <p><b>Event groups.</b> Home run; double and triple; single; walk, hit by pitch and intentional walk; strikeout, including strikeout double plays; outs in play (field outs, force outs, double plays, sacrifices, fielder's choice). "Any scoring play" is every event that scored a run, whatever its type.</p>
+  </Dialog>
+
+  <Dialog id="kx-risk" title="Risk layer" eyebrow="crates/common/src/risk.rs">
+    <p>A pure module: no networking and no order transmission. A live executor must call <code>RiskBook::approve</code> before every order and honour every veto. The defaults are the Phase 6 starting values from the cutover plan and change only by editing config and rebuilding. In the author's words, there is no bypass: friction here is the feature.</p>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Limit</th><th class="num">Default</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>max_exposure_cents</code></td><td class="num">2,500¢</td><td>$25 total cost basis across all open positions</td></tr>
+          <tr><td><code>per_market_cap_cents</code></td><td class="num">500¢</td><td>$5 in any single market</td></tr>
+          <tr><td><code>daily_loss_stop_cents</code></td><td class="num">500¢</td><td>a realised loss of $5 locks trading out for the day</td></tr>
+          <tr><td><code>max_orders_per_min</code></td><td class="num">10</td><td>order-placement cap over a trailing 60 seconds</td></tr>
+          <tr><td><code>max_price_distance_cents</code></td><td class="num">5¢</td><td>reject orders priced further than this from the current mid</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Vetoes</h3>
+    <ul>
+      <li><b>PriceBounds, BadCount:</b> a price outside 1 to 99¢ or a non-positive contract count.</li>
+      <li><b>DailyLoss:</b> realised P&amp;L for the day at or past the stop.</li>
+      <li><b>NoMid:</b> no fresh, finite mid for the market. A missing or NaN price vetoes the order.</li>
+      <li><b>PriceDistance, MarketCap, ExposureCap:</b> the caps count filled and in-flight (approved but unfilled) exposure, so a burst of approvals cannot pass one by one and blow through the limit once they all fill.</li>
+      <li><b>OrderRate:</b> more than the cap in the trailing window.</li>
+    </ul>
+    <h3>Durable stop decisions</h3>
+    <p>When the daily stop fires, the executor writes a <code>LOCKOUT-&lt;date&gt;</code> file, flattens and exits. On start-up a locked-out day refuses to run, so a launchd KeepAlive supervisor can never resurrect the bot into a day it already lost. A kill file and a dead-man switch on stale book or game feeds complete the set. A veto is logged and skipped; the executor never retries around one.</p>
+  </Dialog>
+
+  <Dialog id="kx-exec" title="Live execution spec" eyebrow="docs/LIVE_EXECUTION_SPEC.md" wide>
+    <p>The contract for an order-execution layer that is deliberately not built. Request signing, read-only account views, fill parsing, the risk layer and the strategy signals exist and are tested in <code>common</code> and <code>paper-trader</code>; the executor itself is left to the human operator.</p>
+    <h3>The two calls</h3>
+<pre><code>POST /trade-api/v2/portfolio/orders
+&#123; "ticker": "...", "client_order_id": "&lt;uuid you generate&gt;",
+  "side": "yes", "action": "buy", "count": 1, "type": "limit", "yes_price": 42 &#125;
+
+DELETE /trade-api/v2/portfolio/orders/&#123;order_id&#125;</code></pre>
+    <h3>Invariants</h3>
+    <ul>
+      <li><b>Idempotency.</b> One <code>client_order_id</code> per intent, reused verbatim on every retry. A timeout is not a failure: the order is possibly live until <code>resting_orders()</code> or the fills channel says otherwise.</li>
+      <li><b>Two-key turn.</b> Absent host keys default to production, so the executor must refuse to start when <code>live_enabled = true</code> and the API base is the production host unless <code>confirm_prod = true</code> is also set.</li>
+      <li><b>Fills only.</b> Position and cost basis change only on fill events from the websocket, never on send. The strategy never calls the API; it emits desired state and the executor owns all transmission.</li>
+      <li><b>Start-up.</b> Refuse to run on a locked-out day; cancel every resting order and refetch until none remain; adopt or flatten existing positions; refuse to start below a balance floor.</li>
+    </ul>
+    <h3>Gates before real money</h3>
+    <ul>
+      <li><b>G2:</b> place, query, cancel and fill observed on the demo host; a retried client_order_id provably does not double-fill.</li>
+      <li><b>G3:</b> kill -9 mid-position five times, clean reconciliation every time.</li>
+      <li><b>G5:</b> at least 200 demo trades, positive P&amp;L, shadow-versus-live slippage quantified with compare_fills.py.</li>
+      <li><b>G6:</b> one-contract sizing for a supervised week with a penny-perfect ledger against the Kalshi UI; scale only by a rule written down in advance.</li>
+    </ul>
+  </Dialog>
+
+  <script src="../../scripts/kalshi-page.ts"></script>
 </Base>
+
+<style is:global>
+  /* ---- Page scope: trading terminal ---------------------------------------- */
+  .kx { --kx-grid: color-mix(in srgb, var(--line) 85%, transparent); }
+  .kx .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .kx .kx-split > *, .kx .kx-split--honest > *, .kx-prov, .kx-links { min-width: 0; }
+  .kx-link > span, .kx-link .small { min-width: 0; overflow-wrap: anywhere; }
+  .kx .kx-pos { color: var(--pos); }
+  .kx .kx-neg { color: var(--neg); }
+  .kx .stat__value { font-family: var(--font-mono); font-weight: 600; letter-spacing: -0.02em; }
+  .kx .proj-bar { font-family: var(--font-mono); font-size: 0.8rem; }
+  .kx .proj-bar .muted { font-family: var(--font-body); font-size: 0.86rem; }
+  .kx .kx-sec--sunk { background: color-mix(in srgb, var(--bg-sunk) 70%, var(--bg)); }
+  .kx .section-head .eyebrow { color: var(--accent); }
+  .kx-kv__k { display: block; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  .kx-foot { margin-top: 12px; max-width: 80ch; }
+
+  /* Charts: one render for desktop, one for phones so labels stay legible */
+  .kx-ch--m { display: none; }
+  @media (max-width: 640px) { .kx-ch--d { display: none; } .kx-ch--m { display: block; } }
+  .kx .ch .ch-line, .kx .ch .ch-dot { transition: opacity 0.35s var(--ease-out); }
+
+  /* ---- Hero ----------------------------------------------------------------- */
+  .kx-hero { padding-top: clamp(40px, 6vw, 72px); padding-bottom: 0; }
+  .kx-hero__bg {
+    background:
+      radial-gradient(720px 420px at 88% 4%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+      radial-gradient(520px 320px at 4% 96%, color-mix(in srgb, var(--neg) 11%, transparent), transparent 70%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-elev) 55%, var(--bg)) 0%, var(--bg) 100%);
+  }
+  .kx-hero__grid { position: absolute; inset: 0; background-image: linear-gradient(var(--kx-grid) 1px, transparent 1px), linear-gradient(90deg, var(--kx-grid) 1px, transparent 1px); background-size: 56px 56px; opacity: 0.55; -webkit-mask-image: radial-gradient(130% 100% at 24% 0%, #000 8%, transparent 68%); mask-image: radial-gradient(130% 100% at 24% 0%, #000 8%, transparent 68%); }
+  .kx-hero__diamond { position: absolute; right: -60px; top: -30px; width: min(62vw, 640px); color: var(--accent); opacity: 0.5; -webkit-mask-image: radial-gradient(62% 62% at 50% 46%, #000 30%, transparent 76%); mask-image: radial-gradient(62% 62% at 50% 46%, #000 30%, transparent 76%); }
+  .kx-hero__diamond svg { width: 100%; height: auto; }
+  @media (max-width: 960px) { .kx-hero__diamond { width: 460px; right: -150px; top: 0; opacity: 0.32; } }
+  .kx-hero__top { max-width: 760px; }
+  .kx-hero h1 { font-size: clamp(2.6rem, 1.5rem + 4.2vw, 5rem); letter-spacing: -0.035em; }
+  .kx-hero .lead { margin-top: 20px; }
+  .kx-hero__sub { margin-top: 16px; color: var(--fg-2); max-width: 62ch; }
+  .kx-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 32px; }
+  .kx-tile { position: relative; overflow: hidden; display: grid; gap: 5px; padding: 14px 16px 13px 18px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--bg-elev) 82%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: border-color 0.25s, transform 0.25s var(--ease-out); }
+  .kx-tile::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2px; background: var(--accent); border-radius: 2px; }
+  .kx-tile:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); transform: translateY(-2px); }
+  .kx-tile__label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); }
+  .kx-tile__value { font-family: var(--font-mono); font-size: clamp(1.7rem, 1.2rem + 1.4vw, 2.3rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1; color: var(--fg); font-variant-numeric: tabular-nums; }
+  .kx-tile__sub { font-size: 0.8rem; color: var(--fg-3); }
+  @media (max-width: 760px) { .kx-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .kx-panel { margin-top: clamp(36px, 5vw, 60px); background: color-mix(in srgb, var(--bg-elev) 90%, transparent); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-2); overflow: hidden; }
+  .kx-panel__head { display: flex; justify-content: space-between; align-items: center; gap: 10px 20px; flex-wrap: wrap; padding: 12px 18px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.78rem; }
+  .kx-panel__id { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .kx-ticker { color: var(--accent); letter-spacing: 0.05em; font-weight: 600; }
+  .kx-panel__label { color: var(--fg-3); }
+  .kx-readout { margin: 0; max-width: none; color: var(--fg-2); font-variant-numeric: tabular-nums; min-height: 1.5em; display: flex; flex-wrap: wrap; gap: 0 6px; align-items: baseline; }
+  .kx-readout b { color: var(--fg); font-weight: 600; }
+  .kx-readout__k { color: var(--fg-3); }
+  .kx-readout__sep { color: var(--line-strong); }
+  .kx-readout__hint { color: var(--fg-3); font-family: var(--font-body); font-size: 0.8rem; }
+  .kx-readout__play { color: var(--fg-2); }
+  .kx-readout .kx-pos { color: var(--pos); } .kx-readout .kx-neg { color: var(--neg); }
+  .kx-panel__body { padding: 14px 18px 4px; }
+  .kx-hero-svg { touch-action: pan-y; cursor: crosshair; }
+  .kx .kx-hero-svg .kx-ev { stroke-width: 1; opacity: 0.55; }
+  .kx .kx-hero-svg .kx-pin text { fill: inherit; }
+  .kx .kx-hero-svg .kx-cross { stroke: var(--fg-2) !important; stroke-width: 1 !important; stroke-dasharray: 4 4 !important; stroke-dashoffset: 0 !important; animation: none !important; }
+  .kx .kx-hero-svg .kx-cross-dot { fill: var(--bg); stroke: var(--accent); stroke-width: 2.5; }
+  .kx .kx-hero-svg .kx-end-halo { transform-box: fill-box; transform-origin: center; animation: kx-halo 2.6s ease-in-out infinite; }
+  @keyframes kx-halo { 0%, 100% { transform: scale(0.7); opacity: 0.35; } 50% { transform: scale(1.4); opacity: 0.08; } }
+  .kx .draw .kx-area { opacity: 0; }
+  .kx .draw.is-in .kx-area { animation: kx-fade 1.2s 0.5s var(--ease-out) forwards; }
+  @keyframes kx-fade { to { opacity: 1; } }
+  .kx-plays { display: flex; gap: 8px; overflow-x: auto; padding: 10px 18px 16px; scrollbar-width: thin; }
+  .kx-play { flex: none; display: inline-flex; align-items: center; gap: 9px; padding: 6px 11px 6px 7px; border: 1px solid var(--line); border-radius: 8px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--fg-2); background: var(--bg); transition: border-color 0.2s; }
+  .kx-play:hover { border-color: var(--c); }
+  .kx-play__n { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 0.66rem; font-weight: 700; color: var(--bg); background: var(--c); }
+  .kx-play__when { color: var(--c); font-weight: 600; }
+  .kx-play__score { color: var(--fg-3); }
+
+  .kx-tape { position: relative; z-index: 1; margin-top: clamp(28px, 4vw, 48px); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg-sunk); overflow: hidden; font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.04em; display: flex; }
+  .kx-tape__track { display: flex; flex: none; animation: kx-tape 60s linear infinite; }
+  .kx-tape:hover .kx-tape__track { animation-play-state: paused; }
+  .kx-tape__item { display: inline-flex; align-items: center; gap: 10px; padding: 11px 24px; border-right: 1px solid var(--line); white-space: nowrap; color: var(--fg-3); }
+  .kx-tape__game { color: var(--fg); font-weight: 600; }
+  .kx-tape__score { color: var(--fg-2); }
+  .kx-tape__mkt { color: var(--fg-3); }
+  .kx-tape__res { font-style: normal; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 0.66rem; letter-spacing: 0.08em; }
+  .kx-tape__res.is-yes { color: var(--pos); background: color-mix(in srgb, var(--pos) 14%, transparent); }
+  .kx-tape__res.is-no { color: var(--neg); background: color-mix(in srgb, var(--neg) 14%, transparent); }
+  @keyframes kx-tape { to { transform: translateX(-100%); } }
+
+  /* ---- Table ---------------------------------------------------------------- */
+  .kx-table th.num, .kx-table td.num { white-space: nowrap; }
+  .kx-table td.num { font-size: 0.9rem; }
+  .kx-table .kx-table__hl td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .kx-evlabel { display: inline-flex; align-items: center; gap: 9px; font-weight: 500; white-space: nowrap; }
+  .kx-evdot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent); flex: none; }
+
+  .kx-split { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: clamp(16px, 2.4vw, 28px); margin-top: clamp(28px, 4vw, 44px); align-items: start; }
+  .kx-split--mo { margin-top: 0; }
+  .kx-split--honest { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin-top: 0; }
+  @media (max-width: 960px) { .kx-split, .kx-split--honest { grid-template-columns: 1fr; } }
+  .kx-note { display: grid; grid-template-columns: 24px 1fr; gap: 14px; padding: 18px 20px; align-items: start; }
+  .kx-note svg { width: 22px; height: 22px; color: var(--accent); margin-top: 2px; }
+  .kx-note b { display: block; font-size: 0.98rem; }
+  .kx-note p { font-size: 0.92rem; color: var(--fg-2); margin-top: 4px; }
+
+  /* Bars grown on reveal (SVG rects from the chart module) */
+  .kx-bars-anim .ch-bar { transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); transition: transform 0.9s var(--ease-out); }
+  .kx-bars-anim .ch-bar[data-neg='1'] { transform-origin: 50% 0; }
+  .kx-bars-anim .kx-bars-anim--h .ch-bar { transform-origin: 0 50%; transform: scaleX(0); }
+  .kx-bars-anim .kx-bars-anim--h .ch-bar[data-neg='1'] { transform-origin: 100% 50%; }
+  .kx-bars-anim.is-in .ch-bar { transform: none; }
+  .kx-bars-anim .ch-val { opacity: 0; transition: opacity 0.5s 0.7s; }
+  .kx-bars-anim.is-in .ch-val { opacity: 1; }
+
+  /* ---- Reaction path legend --------------------------------------------------- */
+  .kx-legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 14px; align-items: center; }
+  .kx-legend__chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-family: var(--font-mono); font-size: 0.76rem; color: var(--fg-2); transition: border-color 0.2s, color 0.2s, background 0.2s, opacity 0.2s; }
+  .kx-legend__chip:hover { border-color: var(--c); color: var(--fg); }
+  .kx-legend__chip.is-off { opacity: 0.45; }
+  .kx-legend__chip[aria-pressed='true'] .kx-legend__swatch { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 25%, transparent); }
+  .kx-legend__swatch { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+  .kx-legend__n { color: var(--fg-3); }
+  .kx-legend__reset { font-family: var(--font-mono); font-size: 0.74rem; color: var(--accent); text-decoration: underline; text-underline-offset: 0.2em; padding: 6px 4px; }
+  .kx-path-notes { margin-top: clamp(24px, 3vw, 36px); }
+  .kx-path-notes p { font-size: 0.95rem; color: var(--fg-2); }
+  .kx-path-notes p b { font-weight: 600; }
+
+  /* ---- Momentum ----------------------------------------------------------------- */
+  .kx-tip-host { position: relative; }
+  .kx-mo .ch-pt { transition: opacity 0.3s, r 0.2s; cursor: default; }
+  .kx-mo .ch-pt:hover { opacity: 1; }
+  .kx-mo.is-hl .ch-pt[data-scoring='0'] { opacity: 0.1; }
+  .kx-mo.is-hl .ch-pt[data-scoring='1'] { opacity: 1; }
+  .kx-tip { position: absolute; z-index: 3; transform: translate(-50%, -100%); background: var(--bg); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px; font-size: 0.76rem; color: var(--fg-2); white-space: nowrap; box-shadow: var(--shadow-2); pointer-events: none; }
+  .kx-tip b { color: var(--fg); }
+  .kx-tip__tag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .kx-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line-strong); font-family: var(--font-mono); font-size: 0.74rem; color: var(--fg-2); transition: border-color 0.2s, color 0.2s, background 0.2s; }
+  .kx-toggle:hover { border-color: var(--accent); color: var(--fg); }
+  .kx-toggle__dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--accent); transition: background 0.2s; }
+  .kx-toggle[aria-pressed='true'] { background: var(--accent-soft); color: var(--fg); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+  .kx-toggle[aria-pressed='true'] .kx-toggle__dot { background: var(--accent); }
+  .kx-stat-row { padding-block: 20px; gap: 20px 24px; }
+  .kx-stat-row .stat__value { font-size: clamp(1.9rem, 1.3rem + 1.6vw, 2.6rem); }
+
+  /* HTML bars (ride/fade, asymmetry, innings) */
+  .kx-bars { display: grid; gap: 10px; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--bg-elev); }
+  .kx-bars--tight { padding: 0; border: 0; background: none; margin-top: 4px; }
+  .kx-bars__title { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); }
+  .kx-bars p { margin-top: 4px; }
+  .kx-bar { display: grid; grid-template-columns: minmax(118px, 0.9fr) minmax(0, 1.4fr) 72px; align-items: center; gap: 12px; font-size: 0.9rem; }
+  .kx-bar__label { color: var(--fg-2); }
+  .kx-bar__label small { display: block; font-family: var(--font-mono); font-size: 0.7rem; color: var(--fg-3); }
+  .kx-bar__track { position: relative; height: 10px; border-radius: 5px; background: var(--bg-sunk); overflow: hidden; }
+  .kx-bar__fill { position: absolute; top: 0; bottom: 0; left: 0; width: 0; min-width: 3px; border-radius: 5px; background: var(--accent); transition: width 1.1s var(--ease-out); }
+  .kx-bar__fill.is-pos { background: var(--pos); }
+  .kx-bar__fill.is-neg { background: var(--neg); }
+  .kx-bar__fill.is-mid { background: color-mix(in srgb, var(--pos) 60%, var(--hl)); }
+  .kx-bar__fill.is-flat { background: var(--fg-3); }
+  .kx-bar--div .kx-bar__track::before { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line-strong); }
+  .kx-bar--div .kx-bar__fill.is-pos { left: 50%; }
+  .kx-bar--div .kx-bar__fill.is-neg { left: auto; right: 50%; }
+  .kx-bars.is-in .kx-bar__fill, .kx-bars-anim.is-in .kx-bar__fill { width: var(--w); }
+  .kx-bar__val { text-align: right; font-weight: 600; }
+  .kx-callout { display: grid; grid-template-columns: 26px 1fr; gap: 16px; align-items: start; margin-top: clamp(24px, 3vw, 36px); padding: 18px 22px; }
+  .kx-callout svg { width: 24px; height: 24px; color: var(--accent); }
+  .kx-callout p { max-width: 80ch; }
+
+  /* ---- Speed and leverage ------------------------------------------------------- */
+  .kx-speed .card { display: grid; align-content: start; gap: 10px; }
+  .kx-big { font-family: var(--font-mono); font-size: clamp(3rem, 2rem + 3vw, 4.6rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1; color: var(--accent); }
+  .kx-big__sub { font-size: 0.95rem; color: var(--fg-2); }
+  .kx-spark { height: 64px; margin-top: 6px; }
+  .kx-spark .ch--spark { height: 64px; }
+  .kx-kv { margin-top: 2px; }
+  .kx-kv dd { font-size: 1.15rem; color: var(--fg); font-weight: 600; }
+
+  /* ---- Caveats ------------------------------------------------------------------- */
+  .kx-caveat { display: grid; grid-template-columns: 28px 1fr; gap: 16px; align-items: start; border-left: 3px solid var(--warn); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; }
+  .kx-caveat svg { width: 24px; height: 24px; color: var(--warn); }
+  .kx-caveat b { display: block; font-size: 1.02rem; margin-bottom: 4px; }
+  .kx-caveat p { font-size: 0.95rem; color: var(--fg-2); }
+
+  /* ---- Pipeline flow ------------------------------------------------------------ */
+  .kx-flow { max-width: 900px; margin: 0 auto; }
+  .kx-flow__row { display: grid; grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr)); gap: 12px; }
+  .kx-node { position: relative; display: grid; gap: 4px; padding: 16px 18px 16px 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-elev); overflow: hidden; transition: border-color 0.25s, transform 0.25s var(--ease-out); }
+  .kx-node::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); opacity: 0.8; }
+  .kx-node:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); transform: translateY(-2px); }
+  .kx-node__kind { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  .kx-node b { font-size: 0.98rem; }
+  .kx-node p { font-size: 0.88rem; color: var(--fg-3); }
+  .kx-flow__link { position: relative; height: 34px; display: grid; place-items: center; }
+  .kx-flow__link::before { content: ''; width: 1px; height: 100%; background: var(--line-strong); }
+  .kx-flow__link::after { content: ''; position: absolute; bottom: 2px; width: 7px; height: 7px; border-right: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); transform: rotate(45deg); }
+  @media (max-width: 640px) { .kx-flow__row { grid-template-columns: 1fr; } }
+  .kx-features { margin-top: clamp(32px, 5vw, 56px); }
+  .kx-features .feature h3 { font-size: 1.08rem; }
+  .kx-features .feature .btn { justify-self: start; margin-top: 4px; }
+
+  /* ---- Honesty and provenance ------------------------------------------------------ */
+  .kx-prov { display: grid; gap: 16px; align-content: start; }
+  .kx-shot { background: #fff; }
+  .kx-shot img { display: block; }
+  .kx-links { display: grid; gap: 10px; }
+  .kx-link { display: grid; grid-template-columns: 22px 1fr 16px; align-items: center; gap: 14px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-elev); transition: border-color 0.2s, transform 0.2s var(--ease-out), background 0.2s; }
+  .kx-link:hover { border-color: var(--accent); transform: translateX(3px); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .kx-link > svg { width: 20px; height: 20px; color: var(--accent); }
+  .kx-link b { display: block; font-size: 0.95rem; }
+  .kx-link .small { display: block; font-family: var(--font-mono); font-size: 0.76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kx-link__go { color: var(--fg-3); }
+
+  /* ---- More from the portfolio ------------------------------------------------------ */
+  .kx-more__card { display: grid; gap: 8px; align-content: start; padding: 20px 22px 22px; }
+  .kx-more__tab { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
+  .kx-more__card b { font-size: 1.02rem; line-height: 1.25; }
+  .kx-more__go { position: absolute; right: 18px; top: 18px; color: var(--fg-3); transition: color 0.2s, transform 0.25s var(--ease-out); }
+  .kx-more__card:hover .kx-more__go { color: var(--accent); transform: translateX(3px); }
+  .kx-more__card:hover { border-color: color-mix(in srgb, var(--swatch) 55%, var(--line)); }
+
+  @media (max-width: 640px) {
+    .kx-panel__head { font-size: 0.72rem; }
+    .kx-readout { font-size: 0.76rem; }
+    .kx-bar { grid-template-columns: minmax(96px, 0.9fr) minmax(0, 1fr) 64px; gap: 10px; font-size: 0.84rem; }
+    .kx-hero__sub { font-size: 0.95rem; }
+  }
+</style>

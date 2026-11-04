@@ -1,0 +1,50 @@
+---
+/**
+ * Hero backdrop: a football field drawn in thin lines (yard lines every ten yards, hash
+ * marks, yard numbers), under a soft blue wash. Pure SVG and CSS, no imagery.
+ */
+const yards = [10, 20, 30, 40, 50, 40, 30, 20, 10];
+const W = 1440, H = 720;
+const lineX = (i: number) => 120 + i * 120; // 11 lines: goal line to goal line
+---
+<div class="hero__bg nfl-field" aria-hidden="true">
+  <div class="nfl-field__wash"></div>
+  <svg class="nfl-field__svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" data-parallax="0.08">
+    <defs>
+      <pattern id="nfl-hash" width="24" height="24" patternUnits="userSpaceOnUse">
+        <rect x="11" y="0" width="2" height="8" />
+      </pattern>
+      <linearGradient id="nfl-fade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff" stop-opacity="1" />
+        <stop offset="1" stop-color="#fff" stop-opacity="0" />
+      </linearGradient>
+      <mask id="nfl-mask"><rect width={W} height={H} fill="url(#nfl-fade)" /></mask>
+    </defs>
+    <g class="nfl-field__lines" mask="url(#nfl-mask)">
+      {Array.from({ length: 11 }, (_, i) => <line x1={lineX(i)} x2={lineX(i)} y1="0" y2={H} />)}
+      {Array.from({ length: 11 }, (_, i) => i < 10 && Array.from({ length: 4 }, (_, k) => <line x1={lineX(i) + 24 * (k + 1)} x2={lineX(i) + 24 * (k + 1)} y1="238" y2="252" />))}
+      {Array.from({ length: 11 }, (_, i) => i < 10 && Array.from({ length: 4 }, (_, k) => <line x1={lineX(i) + 24 * (k + 1)} x2={lineX(i) + 24 * (k + 1)} y1="468" y2="482" />))}
+      <line class="nfl-field__mid" x1="0" x2={W} y1="360" y2="360" />
+    </g>
+    <g class="nfl-field__numbers" mask="url(#nfl-mask)">
+      {yards.map((y, i) => <text x={lineX(i + 1)} y="600" text-anchor="middle">{y}</text>)}
+    </g>
+  </svg>
+</div>
+
+<style>
+  .nfl-field { overflow: hidden; }
+  .nfl-field__wash {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(70% 60% at 12% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+      radial-gradient(50% 50% at 100% 100%, color-mix(in srgb, var(--hl) 12%, transparent), transparent 70%),
+      radial-gradient(40% 40% at 85% 10%, color-mix(in srgb, var(--pos) 7%, transparent), transparent 70%),
+      linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--bg) 60%, var(--bg-elev)));
+  }
+  .nfl-field__svg { position: absolute; inset: -8% 0 0; width: 100%; height: 116%; will-change: transform; }
+  .nfl-field__lines line { stroke: color-mix(in srgb, var(--accent) 22%, transparent); stroke-width: 1.5; }
+  .nfl-field__lines .nfl-field__mid { stroke: color-mix(in srgb, var(--accent) 10%, transparent); stroke-dasharray: 2 10; }
+  .nfl-field__numbers text { font-family: var(--font-display); font-weight: 400; font-size: 120px; letter-spacing: -0.04em; fill: color-mix(in srgb, var(--accent) 9%, transparent); }
+</style>

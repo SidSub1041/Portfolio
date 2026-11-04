@@ -1,0 +1,46 @@
+---
+/**
+ * Team initials in a coloured circle, as the dashboard draws them (lib/team-logos-cdn.ts
+ * in model-game-totals maps each team to a Tailwind tint; here the same idea is built from
+ * the theme tokens with color-mix so nothing outside the palette is introduced).
+ * Styles are global (prefixed nfl-tm) because the scatter readout also builds marks in JS.
+ */
+interface Props { abbr: string; name?: string; size?: 'sm' | 'md' | 'lg'; class?: string }
+const { abbr, name, size = 'md', class: cls = '' } = Astro.props;
+const known = new Set(['BUF', 'DEN', 'SF', 'SEA', 'HOU', 'NE', 'LAR', 'CHI']);
+const team = known.has(abbr) ? abbr : 'default';
+---
+<span class:list={['nfl-tm', `nfl-tm--${size}`, `nfl-tm--${team}`, cls]} role="img" aria-label={name ? `${name} (${abbr})` : abbr}>{abbr}</span>
+
+<style is:global>
+  .nfl-tm {
+    --tm-bg: var(--bg-sunk);
+    --tm-fg: var(--fg-2);
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--tm-bg);
+    color: var(--tm-fg);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tm-fg) 18%, transparent);
+    transition: transform 0.3s var(--ease-out);
+  }
+  .nfl-tm--sm { width: 30px; height: 30px; font-size: 0.62rem; }
+  .nfl-tm--lg { width: 56px; height: 56px; font-size: 0.95rem; }
+  /* Blue teams */
+  .nfl-tm--BUF, .nfl-tm--LAR { --tm-bg: color-mix(in srgb, var(--accent) 14%, var(--bg-elev)); --tm-fg: var(--accent-hover); }
+  .nfl-tm--NE { --tm-bg: color-mix(in srgb, var(--accent) 10%, var(--bg-elev)); --tm-fg: var(--accent-hover); }
+  /* Navy teams */
+  .nfl-tm--SEA, .nfl-tm--HOU { --tm-bg: color-mix(in srgb, var(--accent) 16%, var(--bg-elev)); --tm-fg: var(--fg); }
+  /* Orange teams */
+  .nfl-tm--DEN, .nfl-tm--CHI { --tm-bg: color-mix(in srgb, var(--hl) 24%, var(--bg-elev)); --tm-fg: color-mix(in srgb, var(--warn) 90%, #000); }
+  /* Red team */
+  .nfl-tm--SF { --tm-bg: color-mix(in srgb, var(--neg) 12%, var(--bg-elev)); --tm-fg: color-mix(in srgb, var(--neg) 88%, #000); }
+</style>

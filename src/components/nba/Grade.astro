@@ -1,0 +1,21 @@
+---
+/** Grade badge (A+, A, B+, B, C, HOLD) in the board's own style. */
+interface Props { grade: string; size?: 'sm' | 'md' | 'lg'; class?: string; title?: string }
+const { grade, size = 'md', class: cls = '', title } = Astro.props;
+---
+<span class:list={['nba-grade', `nba-grade--${size}`, cls]} data-grade={grade} title={title}>{grade}</span>
+<style>
+  .nba-grade {
+    display: inline-grid; place-items: center; font-family: var(--font-display); letter-spacing: 0.06em; line-height: 1;
+    border-radius: 6px; border: 1.5px solid var(--line-strong); color: var(--fg-2); background: var(--bg-sunk);
+    padding: 0 8px; min-width: 2.4em; height: 2em; font-size: 0.95rem; flex: none; font-variant-numeric: tabular-nums;
+  }
+  .nba-grade--sm { font-size: 0.82rem; height: 1.9em; min-width: 2.2em; }
+  .nba-grade--lg { font-size: 1.4rem; height: 2em; min-width: 2.6em; border-width: 2px; border-radius: 8px; }
+  .nba-grade[data-grade='A+'] { background: var(--hl); border-color: var(--hl); color: #1a1208; }
+  .nba-grade[data-grade='A'] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .nba-grade[data-grade='B+'] { border-color: var(--accent); color: var(--fg); background: var(--accent-soft); }
+  .nba-grade[data-grade='B'] { border-color: var(--line-strong); color: var(--fg); background: transparent; }
+  .nba-grade[data-grade='C'] { color: var(--fg-3); background: transparent; border-style: dashed; }
+  .nba-grade[data-grade='HOLD'] { color: var(--fg-3); background: transparent; border-style: dotted; font-size: 0.78em; letter-spacing: 0.12em; }
+</style>

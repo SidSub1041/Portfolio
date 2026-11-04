@@ -1,6 +1,718 @@
 ---
+/**
+ * NBA Player Prop Model tab. Every number here comes from src/data/nba.json (a snapshot
+ * of the project's own CSV and JSON exports) or from the project README and workflow;
+ * see DESIGN.md section 6. The record section can re-read the live repository.
+ */
+import '@fontsource/bebas-neue';
+import '@fontsource/barlow/400.css';
+import '@fontsource/barlow/500.css';
+import '@fontsource/barlow/600.css';
+import '@fontsource/barlow/700.css';
 import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import Dialog from '../../components/Dialog.astro';
+import SectionHead from '../../components/SectionHead.astro';
+import Court from '../../components/nba/Court.astro';
+import Grade from '../../components/nba/Grade.astro';
+import Board from '../../components/nba/Board.astro';
+import Timeline from '../../components/nba/Timeline.astro';
+import MoreStrip from '../../components/nba/MoreStrip.astro';
+import { barChart } from '../../lib/chart';
+import { fmtUnits, fmtInt, fmtDate, fmtShortDate, statLabel } from '../../lib/format';
+import { heroChartSvg, recordChartSvg, dailyChartSvg, seasonsRowsHtml, pct1, tone, spanOf } from '../../scripts/nba-render';
+import { projectById } from '../../data/projects';
+import { site } from '../../site.config';
+import nba from '../../data/nba.json';
+
+const project = projectById.nba;
+const live = project.links.find((l) => l.kind === 'live') ?? project.links[0];
+const tableau = project.links.find((l) => l.kind === 'dashboard') ?? project.links[0];
+const repo = project.links.find((l) => l.kind === 'repo') ?? project.links[0];
+
+type SeasonKey = keyof typeof nba.seasons;
+const seasonKeys = (Object.keys(nba.seasons) as SeasonKey[]).sort();
+const cur = nba.currentSeason as SeasonKey;
+const prevKey = seasonKeys.filter((k) => k !== cur).pop() ?? cur;
+const season = nba.seasons[cur];
+const prev = nba.seasons[prevKey];
+const all = nba.allTime;
+const cum = nba.cumulative[cur];
+const cumPrev = nba.cumulative[prevKey];
+const dailyCur = nba.daily.filter((d) => d.season === cur);
+const board = nba.lastBoard;
+const learner = nba.learner;
+const pm = nba.postmortem;
+const th = nba.latest.thresholds;
+const caps = nba.latest.caps;
+const snapshotDate = fmtDate(nba.snapshotAt);
+const trainedAt = fmtDate(learner.trainedAt, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+const ci = (c: number[]) => `${(c[0] * 100).toFixed(0)}–${(c[1] * 100).toFixed(0)}%`;
+const pts = (p: number) => `${(p * 100).toFixed(0)}`;
+
+const heroSvg = heroChartSvg(cum, cur, season.units);
+const recordSvg = recordChartSvg(cum, cumPrev, cur, prevKey);
+const dailySvg = dailyChartSvg(dailyCur, cur);
+const seasonsRows = seasonsRowsHtml(seasonKeys.map((k) => [k, nba.seasons[k]]), all, cur);
+
+const byStatSvg = barChart({
+  width: 720, height: 330, horizontal: true, fontSize: 12, gap: 0.4, pad: { l: 128, r: 72 }, yDomain: [-16, 4],
+  categories: nba.byStat.map((s) => `${statLabel(s.key)} · ${s.n}`),
+  series: [{ values: nba.byStat.map((s) => s.units), color: nba.byStat.map((s) => (s.units >= 0 ? 'var(--pos)' : 'var(--neg)')) }],
+  valueFmt: (v) => `${v > 0 ? '+' : ''}${v.toFixed(2)}u`,
+  ariaLabel: 'Units won or lost by stat across all graded picks: assists −12.33, points −10.11, rebounds −4.15, points plus rebounds −3.44, rebounds plus assists −0.30, PRA −0.25, points plus assists +1.48',
+});
+const byGradeSvg = barChart({
+  width: 420, height: 250, fontSize: 12, gap: 0.45, pad: { l: 52, r: 16 },
+  categories: nba.byGrade.map((g) => `${g.key} · ${g.n} picks`),
+  series: [{ values: nba.byGrade.map((g) => g.units), color: nba.byGrade.map((g) => (g.units >= 0 ? 'var(--pos)' : 'var(--neg)')) }],
+  valueFmt: (v) => `${v > 0 ? '+' : ''}${v.toFixed(2)}u`,
+  ariaLabel: 'Units by grade across all graded picks: A+ −21.99 units on 212 picks, A −7.11 units on 111 picks',
+});
+
+const steps = [
+  { title: 'Candidates: every player with a line', body: 'Every player on the slate who averages 20+ minutes and has a sportsbook line is a candidate for every stat the model projects, on both sides. No colour, no rank cut: the market decides what is on the board, the model decides what is worth playing. Players listed OUT are skipped.' },
+  { title: 'Projection: two seasons, blended', body: 'A per-game mean and spread from NBA.com game logs. This season is weighted by form (a game ten games ago counts half as much as last night), last season is the prior, and the two are blended by sample size: this season’s weight is n / (n + 10). The spread is mixed with a typical spread for the stat so a hot three-game start never reads as a near-certainty. Since round 19, assists are projected from passing: passes made, potential assists per pass and conversion.' },
+  { title: 'Matchup: a multiplier, not a vote', body: 'Defense versus position as a z-score at half strength, the two teams’ pace, and for points every shot zone and playtype against what the opponent allows, at 2% per unit of z. Teammates out add 3% per OUT starter, up to two. The multiplier is clipped to 0.80–1.25.' },
+  { title: 'Probability against the de-vigged market', body: 'Points and combos use a normal distribution, rebounds and assists a negative binomial; on an integer line the push is removed from both sides. The market is the best price on each side across the books, de-vigged multiplicatively. The two are blended at MODEL_TRUST 0.5 and the edge is that blend minus the break-even of the price actually taken: −110 needs 52.4%, so at −110 an A needs the model near 61% and an A+ near 67% where the market says 50%.' },
+  { title: 'Guards and caps', body: 'A valid pick needs a price no worse than −121, at least 3 sportsbooks at the consensus line, a line of at least 4.0, at least 24 projected minutes and, for assists, a passing projection. The board is then capped to the strongest edges: 15 plays, 3 per game, 1 single-stat play per player. Dropped plays are listed under the board with the cap that dropped them.' },
+  { title: 'Grading', body: 'Every morning the grader scores each pick against the box score and pays it at the price taken; a push loses on either side, which is how the board grades. Grades are the edge in points: A+ at 6 or more, A at 3, B+ at 1.5 and B above zero go to the watchlist, C is no play, HOLD means no line.' },
+  { title: 'Closing-line value', body: 'Snapshot runs every 30 minutes re-price the games tipping within 45 minutes, so the model knows where every line opened, moved and closed. A close only counts when the market was re-priced within 90 minutes of tip; otherwise the pick’s CLV is left unverified, never counted as zero. CLV is the closing line minus the line taken, and the de-vigged closing probability minus the pick-time probability. Beating the close is the only evidence of an edge that does not need the result to land.' },
+];
+
+const books = ['DraftKings', 'FanDuel', 'BetMGM', 'BetRivers', 'Bovada', 'BetOnline'];
+const dfs = ['PrizePicks', 'Underdog', 'DraftKings Pick6', 'Betr', 'Dabble'];
+const clv = board.clv;
 ---
-<Base title="nba-player-prop-model placeholder" theme="nba">
-  <section class="hero"><div class="container"><span class="kicker"><span class="dot"></span> nba theme</span><h1>nba-player-prop-model</h1><p class="lead">Placeholder page, theme check only.</p></div></section>
+<Base title={`${project.name} · ${site.name}`} description={project.summary} theme="nba">
+  <div class="nba">
+    <div class="container">
+      <div class="proj-bar">
+        <div class="row">
+          <span class="badge badge--live">Live</span>
+          <span class="mono">{project.period}</span>
+          <span class="nba-sep" aria-hidden="true"></span>
+          <span>{project.status}</span>
+        </div>
+        <div class="cluster nba-stack" style="--cluster:6px">{project.stack.map((s) => <span class="chip chip--outline">{s}</span>)}</div>
+        <div class="proj-bar__links">
+          {project.links.map((l) => <a class:list={['btn', 'btn--sm', l.kind === 'live' ? 'btn--primary' : 'btn--ghost']} href={l.url}>{l.label} <Icon name="arrow-up-right" size={14} /></a>)}
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. Hero -->
+    <section class="hero nba-hero grain" aria-labelledby="nba-title">
+      <div class="hero__bg nba-hero__bg" aria-hidden="true">
+        <div class="nba-hero__court" data-parallax="0.08"><Court /></div>
+        <div class="nba-hero__chart draw" data-live="hero-chart"><Fragment set:html={heroSvg} /></div>
+      </div>
+      <div class="container nba-hero__grid">
+        <div class="nba-hero__copy">
+          <span class="kicker reveal"><span class="dot"></span> Self-grading · runs every night of the <span data-live="season-key">{cur}</span> season</span>
+          <h1 id="nba-title" class="reveal" style="--i:1">NBA Player<br />Prop Model</h1>
+          <p class="lead reveal" style="--i:2">{project.oneLiner} Every player with a line is projected from two seasons of game logs, adjusted for the matchup, turned into a probability and priced against the de-vigged market at the best book.</p>
+          <p class="nba-hero__claim reveal" style="--i:3"><Icon name="shield" size={20} /><span>Published nightly, wins and losses alike. Every pick is graded against the box score and the closing line the next morning, and the record below is the one the pipeline writes.</span></p>
+          <div class="hero__actions reveal" style="--i:4">
+            <a class="btn btn--primary btn--lg" href={live.url}>Open the live board <Icon name="arrow-up-right" size={16} /></a>
+            <a class="btn btn--ghost btn--lg" href="#method">How a pick is made <Icon name="arrow-down" size={16} class="arrow" /></a>
+            <button class="btn btn--soft btn--lg" type="button" data-dialog-open="nba-sources"><Icon name="database" size={16} /> Data sources and lines</button>
+          </div>
+        </div>
+        <aside class="nba-score reveal reveal--scale" style="--i:2" aria-label={`${cur} season record`}>
+          <div class="nba-score__head">
+            <span class="badge badge--live pulse">Live record</span>
+            <span class="mono small muted" data-live="as-of">Snapshot {snapshotDate}</span>
+          </div>
+          <div class="nba-score__record">
+            <span class="nba-score__wl" data-live="season-record">{season.hits}–{season.misses}</span>
+            <span class="nba-score__wl-label">Wins–losses, <span data-live="season-key">{cur}</span> season<br /><span class="muted"><span data-live="season-voided">{season.voided}</span> voided</span></span>
+          </div>
+          <dl class="nba-score__grid">
+            <div class="nba-score__cell"><dt>Units</dt><dd class={tone(season.units)} data-live="season-units" data-count={season.units} data-format="units">{fmtUnits(season.units)}</dd></div>
+            <div class="nba-score__cell"><dt>Hit rate</dt><dd data-live="season-hitrate" data-count={(season.hitRate ?? 0) * 100} data-format="pct1">{pct1(season.hitRate)}</dd></div>
+            <div class="nba-score__cell"><dt>Graded days</dt><dd data-live="season-days" data-count={season.gradedDays} data-format="int">{season.gradedDays}</dd></div>
+            <div class="nba-score__cell"><dt>Picks graded</dt><dd data-live="season-picks" data-count={season.picks} data-format="int">{season.picks}</dd></div>
+          </dl>
+          <ul class="nba-score__foot" role="list">
+            <li><Icon name="calendar" size={14} /> <span data-live="season-span">{spanOf(season)}</span></li>
+            <li><Icon name="trending-up" size={14} /> Best day <b class="text-pos" data-live="season-best">{season.bestDay ? `${fmtUnits(season.bestDay.units)} (${fmtShortDate(season.bestDay.date)})` : '—'}</b></li>
+            <li><Icon name="trending-down" size={14} /> Worst day <b class="text-neg" data-live="season-worst">{season.worstDay ? `${fmtUnits(season.worstDay.units)} (${fmtShortDate(season.worstDay.date)})` : '—'}</b></li>
+          </ul>
+          <p class="nba-score__prev small" data-live="prev-line">Last season ({prevKey}): {prev.hits}–{prev.misses}, {fmtUnits(prev.units)} over {prev.gradedDays} graded days. All time: {all.hits}–{all.misses}, {fmtUnits(all.units)}.</p>
+        </aside>
+      </div>
+    </section>
+
+    <nav class="nba-jump" aria-label="On this page">
+      <div class="container nba-jump__inner">
+        <span class="nba-jump__label">On this page</span>
+        <a href="#method">Method</a><a href="#record">Record</a><a href="#splits">Splits</a><a href="#board">Last board</a><a href="#learning">Learning loop</a><a href="#pipeline">Pipeline</a><a href="#links">Links</a>
+      </div>
+    </nav>
+
+    <!-- 2. How a pick is made -->
+    <section class="section nba-section" id="method" aria-labelledby="method-title">
+      <div class="container">
+        <SectionHead eyebrow="Method" title="How a pick is made" lead="Seven steps from the night's slate to a graded pick, as the README describes them. The market sets the lines; the model only decides which side, if any, pays." />
+        <div class="nba-method">
+          <div class="nba-method__aside">
+            <figure class="nba-pick reveal reveal--scale">
+              <div class="nba-pick__card">
+                <div class="nba-pick__top">
+                  <span class="nba-pick__rank">#1</span>
+                  <div class="nba-pick__who"><b>Jayson Tatum</b><span class="mono">BOS · SF · opp MIA</span></div>
+                  <Grade grade="A+" size="lg" />
+                </div>
+                <div class="nba-pick__play">
+                  <span class="nba-side nba-side--over">Over</span>
+                  <span class="nba-pick__line">26.5</span>
+                  <span class="nba-pick__stat">Points</span>
+                  <span class="mono nba-pick__price">−110 · DK</span>
+                </div>
+                <dl class="nba-pick__edge">
+                  <div><dt>Model</dt><dd>67%</dd></div>
+                  <div><dt>Market</dt><dd>50%</dd></div>
+                  <div><dt>Blend</dt><dd>59%</dd></div>
+                  <div><dt>Needs</dt><dd>52%</dd></div>
+                  <div class="is-edge"><dt>Edge</dt><dd>+6.1</dd></div>
+                </dl>
+                <p class="nba-pick__hr"><span>Hit rate vs line</span><b>62%</b></p>
+              </div>
+              <figcaption>The example card from the README. Blend = 0.5 × 67% + 0.5 × 50% = 59%; a −110 price needs 52.4%; the edge is 59 − 52.4, about +6.1 points, an A+.</figcaption>
+            </figure>
+            <div class="nba-method__cta reveal" style="--i:2">
+              <button class="btn btn--soft" type="button" data-dialog-open="nba-thresholds"><Icon name="info" size={16} /> Grading thresholds and caps</button>
+              <p class="small muted">The live gates from <code>latest.json</code>, model version <code>{nba.latest.modelVersion}</code>.</p>
+            </div>
+          </div>
+          <ol class="step-list nba-steps" role="list">
+            {steps.map((s, i) => (
+              <li class="step reveal" style={`--i:${i + 1}`}>
+                <span class="step__num" aria-hidden="true"></span>
+                <div><h3>{s.title}</h3><p>{s.body}</p></div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Record -->
+    <section class="section section--bordered nba-section nba-section--plank" id="record" aria-labelledby="record-title">
+      <div class="container" id="nba-live" data-src={nba.liveData.resultsHistory} data-snapshot={snapshotDate} data-live-state="snapshot">
+        <div class="nba-record__head">
+          <SectionHead eyebrow="Record" title="The record, as graded" lead="Cumulative units by graded day, the units each night won or lost, and the season totals. The current season is losing, and the page says so, because the pipeline writes these numbers, not the author." />
+          <div class="nba-live reveal" style="--i:3">
+            <div class="nba-live__state">
+              <span class="nba-live__dot" aria-hidden="true"></span>
+              <span class="mono small">Snapshot taken {snapshotDate}</span>
+            </div>
+            <button class="btn btn--primary" type="button" data-live-button><Icon name="refresh" size={16} class="nba-live__ico" /> <span data-live-label>Refresh from the live repo</span></button>
+            <p class="nba-live__status small" data-live-status aria-live="polite">Reads <code>results_history.json</code> straight from GitHub in your browser and redraws this section.</p>
+          </div>
+        </div>
+        <div class="nba-record">
+          <div class="chart-card nba-chart reveal" style="--i:1">
+            <div class="chart-card__head"><span class="chart-card__title">Cumulative units by graded day</span><span class="chart-card__note">{cur} solid · {prevKey} dashed</span></div>
+            <div class="nba-scroll"><div data-live="record-chart"><Fragment set:html={recordSvg} /></div></div>
+            <div class="legend" style="margin-top:12px"><span class="legend__item"><i class="legend__swatch" style="--c:var(--accent)"></i>{cur}, {season.gradedDays} graded days</span><span class="legend__item"><i class="legend__swatch" style="--c:var(--hl)"></i>{prevKey}, {prev.gradedDays} graded days</span></div>
+          </div>
+          <div class="chart-card nba-chart reveal" style="--i:2">
+            <div class="chart-card__head"><span class="chart-card__title">Units by night, {cur}</span><span class="chart-card__note">graded picks only</span></div>
+            <div class="nba-scroll"><div data-live="daily-chart"><Fragment set:html={dailySvg} /></div></div>
+          </div>
+        </div>
+        <div class="table-wrap nba-seasons reveal" style="--i:3">
+          <table class="table">
+            <thead><tr><th>Season</th><th class="num">Picks</th><th class="num">W–L</th><th class="num">Voided</th><th class="num">Hit rate</th><th class="num">Units</th><th class="num">Graded days</th><th class="num">Best day</th><th class="num">Worst day</th></tr></thead>
+            <tbody data-live="seasons-rows"><Fragment set:html={seasonsRows} /></tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin-top:12px">Source: <code>daily_results.csv</code> and <code>graded_picks.csv</code> in the repository, exported by the pipeline after every grading run. Hit rate is hits divided by graded picks; voided picks are excluded.</p>
+      </div>
+    </section>
+
+    <!-- 4. By stat and by grade -->
+    <section class="section section--bordered nba-section" id="splits" aria-labelledby="splits-title">
+      <div class="container">
+        <SectionHead eyebrow="Splits" title="By stat, by grade, by side" lead={`All ${fmtInt(nba.gradedRows)} graded picks across both seasons, cut the way the learner's segment report cuts them.`} />
+        <div class="nba-splits">
+          <div class="chart-card nba-chart reveal" data-tabs>
+            <div class="chart-card__head">
+              <span class="chart-card__title">By stat</span>
+              <div class="nba-tabs" role="tablist" aria-label="By-stat view">
+                <button class="nba-tab" role="tab" id="tab-stat-units" aria-selected="true" aria-controls="panel-stat-units" data-tab-target="panel-stat-units">Units</button>
+                <button class="nba-tab" role="tab" id="tab-stat-hr" aria-selected="false" aria-controls="panel-stat-hr" data-tab-target="panel-stat-hr" tabindex="-1">Hit rate</button>
+              </div>
+            </div>
+            <div id="panel-stat-units" role="tabpanel" aria-labelledby="tab-stat-units">
+              <Fragment set:html={byStatSvg} />
+              <p class="small muted" style="margin-top:10px">Label: stat · graded picks. Combos are PTS+REB, PTS+AST, REB+AST and PRA (points, rebounds and assists).</p>
+            </div>
+            <div id="panel-stat-hr" role="tabpanel" aria-labelledby="tab-stat-hr" hidden>
+              <ul class="nba-meters" role="list">
+                {nba.byStat.map((s) => (
+                  <li class="nba-meter" style={`--v:${(s.hitRate * 100).toFixed(1)}`}>
+                    <span class="nba-meter__label">{statLabel(s.key)}<small class="mono">{s.hits}–{s.n - s.hits}</small></span>
+                    <span class="nba-meter__bar" aria-hidden="true"><i></i><b class="nba-meter__be"></b></span>
+                    <span class:list={['nba-meter__val', s.hitRate >= 0.524 ? 'text-pos' : '']}>{(s.hitRate * 100).toFixed(1)}%</span>
+                  </li>
+                ))}
+              </ul>
+              <p class="small muted" style="margin-top:10px">The dotted tick is 52.4%, the hit rate a −110 price needs to break even. Only PTS+AST clears it, on 14 picks.</p>
+            </div>
+          </div>
+          <div class="nba-splits__side">
+            <div class="chart-card nba-chart reveal" style="--i:1">
+              <div class="chart-card__head"><span class="chart-card__title">By grade</span><span class="chart-card__note">only A+ and A publish</span></div>
+              <Fragment set:html={byGradeSvg} />
+              <div class="nba-grades">
+                {nba.byGrade.map((g) => (
+                  <div class="nba-gradetile">
+                    <Grade grade={g.key} size="lg" />
+                    <div class="nba-gradetile__body"><b>{g.hits}–{g.n - g.hits}</b><span class="small muted">{(g.hitRate * 100).toFixed(1)}% of {g.n}</span></div>
+                    <span class:list={['nba-gradetile__u', tone(g.units)]}>{fmtUnits(g.units)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div class="chart-card nba-chart reveal" style="--i:2">
+              <div class="chart-card__head"><span class="chart-card__title">By side</span><span class="chart-card__note">over in green, under in gold</span></div>
+              <div class="nba-sides">
+                {nba.bySide.map((s) => (
+                  <div class="nba-sidetile">
+                    <span class:list={['nba-side', `nba-side--${s.key}`]}>{s.key}</span>
+                    <b class="nba-sidetile__rec">{s.hits}–{s.n - s.hits}</b>
+                    <span class="small muted">{(s.hitRate * 100).toFixed(1)}% of {s.n}</span>
+                    <span class:list={['nba-sidetile__u', tone(s.units)]}>{fmtUnits(s.units)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Last graded board -->
+    <section class="section section--bordered nba-section nba-section--plank" id="board" aria-labelledby="board-title">
+      <div class="container">
+        <div class="nba-board-head">
+          <SectionHead eyebrow="Last graded board" title={`${fmtDate(board.date)}: ${board.hits}–${board.misses}, ${fmtUnits(board.units)}`} lead="Every pick the board published that night, with the model's probability at pick time, the price taken, what the player actually did, and the closing-line value where the close could be verified." />
+          <dl class="nba-clv reveal" style="--i:3" aria-label="Closing-line value for the night">
+            <div><dt>Closes verified</dt><dd>{clv.n} <span class="muted">of {board.picks}</span></dd></div>
+            <div><dt>Unverified</dt><dd>{clv.unverified}</dd></div>
+            <div><dt>Avg line vs close</dt><dd class={tone(clv.avg_line)}>{clv.avg_line > 0 ? '+' : ''}{clv.avg_line.toFixed(2)}</dd></div>
+            <div><dt>Beat the close</dt><dd>{pts(clv.beat_close)}%</dd></div>
+            <div><dt>Pushed the close</dt><dd>{pts(clv.pushed_close)}%</dd></div>
+            <div><dt>Avg probability CLV</dt><dd class={tone(clv.avg_prob)}>{clv.avg_prob > 0 ? '+' : ''}{(clv.avg_prob * 100).toFixed(1)} pts</dd></div>
+          </dl>
+        </div>
+        <div class="reveal" style="--i:1">
+          <Board rows={board.rows} date={board.date} />
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. The learning loop -->
+    <section class="section section--bordered nba-section" id="learning" aria-labelledby="learning-title">
+      <div class="container">
+        <SectionHead eyebrow="The learning loop" title="It studies its own results every morning" lead="After grading, the learner labels every prop that had a line, about 100 a night and not only the published picks, retrains, checks itself walk-forward, and writes a post-mortem. It is not allowed to touch the board until it has earned it." />
+        <div class="nba-learn">
+          <div class="nba-learn__col">
+            <div class="panel nba-console reveal">
+              <div class="panel__head"><span>logs/learner.json</span><span class="nba-console__mode"><i></i>mode: {learner.mode}</span></div>
+              <div class="panel__body">
+                <dl class="nba-console__grid">
+                  <div><dt>Features</dt><dd data-count={learner.features.length} data-format="int">{learner.features.length}</dd></div>
+                  <div><dt>Labeled rows</dt><dd data-count={learner.nRows} data-format="int">{fmtInt(learner.nRows)}</dd></div>
+                  <div><dt>Nights</dt><dd data-count={learner.nDays} data-format="int">{learner.nDays}</dd></div>
+                  <div><dt>Trusted</dt><dd class="text-neg">{learner.trusted ? 'yes' : 'no'}</dd></div>
+                  <div><dt>Pass streak</dt><dd>{learner.passStreak}</dd></div>
+                  <div><dt>Fail streak</dt><dd class="text-neg">{learner.failStreak}</dd></div>
+                </dl>
+                <p class="small muted" style="margin-top:14px">Retrained {trainedAt}. An L2-regularized logistic regression over what was known at pick time, recent nights weighted more, refit from scratch on every run.</p>
+                <button class="btn btn--ghost btn--sm" type="button" data-dialog-open="nba-features" style="margin-top:14px"><Icon name="layers" size={14} /> The {learner.features.length} features</button>
+              </div>
+            </div>
+            <div class="nba-gate reveal" style="--i:1">
+              <h3><Icon name="lock" size={18} /> The activation gate</h3>
+              <p>The check is walk-forward: each night is predicted by a model trained only on the nights before it, and compared with two baselines, the average hit rate and the de-vigged book price. To act on the board it must beat the stronger baseline by at least 1% on at least 300 props over at least 10 nights, on three retrains in a row; until then it runs in shadow mode, where its probability shows on every card and nothing changes.</p>
+              <p class="nba-gate__now"><b>Today:</b> shadow mode, not trusted, {learner.failStreak} failing retrains in a row. It has not cut a single pick.</p>
+            </div>
+            <div class="callout nba-rebuilt reveal" style="--i:2">
+              <h3>Why the model was rebuilt</h3>
+              <p>Before round 18 the model was a filter: a defense-vs-position colour, rank conditions and last season's hit rate against the line. Measured on the 893 props it had labeled with a line, none of it predicted anything. The published picks hit 48.0% (179 labeled, −14.0u) while the props left on the board hit 51.9%, and the whole deficit sat on picks priced −121 or worse (40.8%, 71 picks, −21.7u) while better-priced picks were ahead (53.3%, 107 picks, +8.7u). The filter was replaced with a projection, a probability, the market price and closing-line value.</p>
+            </div>
+          </div>
+          <div class="panel nba-pm reveal" style="--i:1">
+            <div class="panel__head"><span>Post-mortem · {fmtDate(pm.date)}</span><span>{pm.allProps.hits}–{pm.allProps.misses} on {pm.allProps.n} props</span></div>
+            <div class="panel__body">
+              <p class="small muted">{pm.scope.charAt(0).toUpperCase() + pm.scope.slice(1)}. All props that night hit {(pm.allProps.rate * 100).toFixed(1)}% (95% interval {ci(pm.allProps.ci)}).</p>
+              <div class="nba-pm__cols">
+                <div>
+                  <h4 class="nba-pm__h text-pos"><Icon name="trending-up" size={16} /> Went right</h4>
+                  <ul role="list" class="nba-pm__list">
+                    {pm.wentRight.map((s) => <li><span class="nba-pm__seg">{s.segment}</span><span class="nba-pm__num"><b>{s.hits}–{s.misses}</b> {(s.rate * 100).toFixed(1)}% <span class="muted">{ci(s.ci)}</span></span></li>)}
+                  </ul>
+                  <p class="small muted">A segment that would beat a −110 price.</p>
+                </div>
+                <div>
+                  <h4 class="nba-pm__h text-neg"><Icon name="trending-down" size={16} /> Went wrong</h4>
+                  <ul role="list" class="nba-pm__list">
+                    {pm.wentWrong.map((s) => <li><span class="nba-pm__seg">{s.segment}</span><span class="nba-pm__num"><b>{s.hits}–{s.misses}</b> {(s.rate * 100).toFixed(1)}% <span class="muted">{ci(s.ci)}</span></span></li>)}
+                  </ul>
+                </div>
+              </div>
+              <h4 class="nba-pm__h"><Icon name="target" size={16} /> Biggest misses</h4>
+              <ul role="list" class="nba-pm__misses">
+                {pm.biggestMisses.map((m) => (
+                  <li>
+                    <span class="nba-pm__player">{m.player}</span>
+                    <span class="nba-pm__play"><span class:list={['nba-side', `nba-side--${m.edge}`]}>{m.edge}</span> {m.line} {statLabel(m.stat)}</span>
+                    <span class="nba-pm__actual">actual <b>{m.actual}</b></span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Pipeline -->
+    <section class="section section--bordered nba-section nba-section--plank" id="pipeline" aria-labelledby="pipeline-title">
+      <div class="container">
+        <SectionHead eyebrow="Pipeline" title="One day on GitHub Actions" lead="Five cron schedules build, fill, snapshot and grade the board. Crons are UTC, so the Eastern times are the summer ones; from November to mid-March everything runs an hour earlier." />
+        <div class="reveal"><Timeline /></div>
+        <div class="grid grid--3 nba-ops">
+          <div class="feature reveal" style="--i:1">
+            <Icon name="globe" />
+            <h3>Where it runs</h3>
+            <p><code>stats.nba.com</code> silently blocks most cloud datacenter IP ranges, GitHub Actions runners included, so scheduled model and grading runs only happen when an <code>NBA_PROXY</code> secret is configured. Without one, a local runner produces the data and Actions only exports and deploys. A manual <code>probe</code> task tests the NBA API, Underdog's feed and The Odds API from the runner in about a minute.</p>
+          </div>
+          <div class="feature reveal" style="--i:2">
+            <Icon name="shield" />
+            <h3>A failed step blocks the data commit</h3>
+            <p>A failed model or grade step shows red and the data commit is skipped, so a board built on fallbacks alone can never overwrite real data. A run that aborts mid-way publishes nothing but keeps the sportsbook prices it already paid for. Two concurrency groups, <code>pages</code> and <code>snapshots</code>, mean a snapshot can never cancel a board run; when the two finish together, <code>commit_data.sh</code> merges the day's logs.</p>
+          </div>
+          <div class="feature reveal" style="--i:3">
+            <Icon name="table" />
+            <h3>Exports and deploy</h3>
+            <p>Every board run exports CSV fact tables, <code>picks.csv</code>, <code>graded_picks.csv</code> and <code>daily_results.csv</code>, for the Tableau dashboard, and any data push redeploys the Next.js site to GitHub Pages within about two minutes. The league game-log cache is kept between runs with <code>actions/cache</code>.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Links -->
+    <section class="section section--bordered nba-section" id="links" aria-labelledby="links-title">
+      <div class="container">
+        <SectionHead eyebrow="Links" title="See it running" lead="The board, the dashboard and the code. About 11,100 lines of Python and 2,000 of TypeScript; the site is Next.js 14 with Tailwind." />
+        <div class="grid grid--3 nba-links">
+          <a class="card card--hover nba-link reveal" href={live.url} style="--i:1">
+            <Icon name="globe" />
+            <h3>{live.label}</h3>
+            <p>Tonight's board ranked best first, the receipts, the film room and the season's cuts, redeployed after every data push.</p>
+            <span class="nba-link__go">sidsub1041.github.io <Icon name="arrow-up-right" size={16} class="arrow" /></span>
+          </a>
+          <a class="card card--hover nba-link reveal" href={tableau.url} style="--i:2">
+            <Icon name="bar-chart" />
+            <h3>{tableau.label}</h3>
+            <p>Cumulative units, daily win rate, splits and a pick explorer on Tableau Public, fed by the exported CSV fact tables.</p>
+            <span class="nba-link__go">public.tableau.com <Icon name="arrow-up-right" size={16} class="arrow" /></span>
+          </a>
+          <a class="card card--hover nba-link reveal" href={repo.url} style="--i:3">
+            <Icon name="github" />
+            <h3>{repo.label}</h3>
+            <p>The model, the grader, the learner, the workflow and every log the pipeline has written, committed in the open.</p>
+            <span class="nba-link__go">github.com/SidSub1041 <Icon name="arrow-up-right" size={16} class="arrow" /></span>
+          </a>
+        </div>
+        <div class="nba-links__foot reveal" style="--i:4">
+          <button class="btn btn--soft" type="button" data-dialog-open="nba-sources"><Icon name="database" size={16} /> Data sources and lines</button>
+          <button class="btn btn--ghost" type="button" data-dialog-open="nba-thresholds"><Icon name="info" size={16} /> Grading thresholds</button>
+          <button class="btn btn--ghost" type="button" data-dialog-open="contact"><Icon name="mail" size={16} /> Ask about the model</button>
+        </div>
+      </div>
+    </section>
+
+    <MoreStrip current="nba" />
+
+    <!-- Dialogs -->
+    <Dialog id="nba-thresholds" title="Grading thresholds and caps" eyebrow={`latest.json · model ${nba.latest.modelVersion}`}>
+      <p>A pick's grade is its edge: the blended probability minus the break-even of the price taken, in percentage points. Only A+ and A picks that pass the guards and survive the caps are published.</p>
+      <div class="nba-dlg-grades">
+        <div><Grade grade="A+" /> <span>edge ≥ {pts(th.strong_edge)} points; price and line-size guards may be overridden</span></div>
+        <div><Grade grade="A" /> <span>edge ≥ {pts(th.min_edge)} points; every guard must pass</span></div>
+        <div><Grade grade="B+" /> <span>edge ≥ 1.5 points, watchlist</span></div>
+        <div><Grade grade="B" /> <span>edge above zero, watchlist</span></div>
+        <div><Grade grade="C" /> <span>edge at or below zero, no play</span></div>
+        <div><Grade grade="HOLD" /> <span>no line, so nothing to measure</span></div>
+      </div>
+      <h3>Guards</h3>
+      <dl class="kv">
+        <dt>Max price</dt><dd>{th.max_price} (worse prices need an A+ edge)</dd>
+        <dt>Min books</dt><dd>{th.min_books} sportsbooks at the consensus line; DFS-app lines are shown and graded but never published</dd>
+        <dt>Min line</dt><dd>{th.min_line.toFixed(1)}</dd>
+        <dt>Min minutes</dt><dd>{th.min_proj_minutes.toFixed(0)} projected</dd>
+        <dt>Assists</dt><dd>need a passing projection</dd>
+      </dl>
+      <h3>Caps</h3>
+      <dl class="kv">
+        <dt>Board</dt><dd>{caps.max_picks} plays, strongest edges first</dd>
+        <dt>Per game</dt><dd>{caps.max_per_game}</dd>
+        <dt>Per player</dt><dd>{caps.max_per_player} single-stat play, plus one combo</dd>
+      </dl>
+      <p class="small muted">Also still in <code>latest.json</code> from the filter era before round 18: a hit-rate gate of {pts(th.hitrate)}% and condition pass rates of {pts(th.condition_pass_rate)}% ({pts(th.condition_pass_rate_points)}% for points). The edge model does not gate on them; the README's own audit found they predicted nothing.</p>
+    </Dialog>
+
+    <Dialog id="nba-features" title={`The ${learner.features.length} features`} eyebrow="logs/learner.json">
+      <p>What the learner sees for every prop, all of it known at pick time: the hit rate against the line and the season average versus it, the price's implied probability, the stat type and side, how many books hang the line, the injury tag and sample size, and since round 18 the edge model's own view: its probability, the market's, the edge, the line's move toward the pick, the DvP and matchup z-scores, projected minutes and this season's share of the projection.</p>
+      <ul class="nba-features" role="list">
+        {learner.features.map((f) => <li><code>{f}</code></li>)}
+      </ul>
+      <p class="small muted">{fmtInt(learner.nRows)} labeled rows over {learner.nDays} nights. Features are recomputed from each stored board, so a definition change never mixes old and new encodings.</p>
+    </Dialog>
+
+    <Dialog id="nba-sources" title="Data sources and lines" eyebrow="Where the numbers come from">
+      <dl class="kv">
+        <dt>Game logs</dt><dd>NBA.com game logs, one league-wide request per season cached on disk, plus tracking tables for passing, shot zones and playtypes.</dd>
+        <dt>Matchups</dt><dd>FantasyPros defense versus position, ESPN depth charts, the CBS injury report.</dd>
+        <dt>Box scores</dt><dd>NBA.com, read by the grader every morning.</dd>
+      </dl>
+      <h3>Lines and prices</h3>
+      <p>Every prop is measured against the sportsbook line from <a href="https://the-odds-api.com">The Odds API</a>: the line most books hang, with the best price on each side and the book offering it. The <code>us</code> region covers:</p>
+      <div class="cluster" style="--cluster:6px">{books.map((b) => <span class="chip chip--accent">{b}</span>)}</div>
+      <p style="margin-top:14px">When the books post nothing at all for a market in a game, the model buys it from the DFS pick'em apps in the same API (<code>us_dfs</code>), labels those lines <em>dfs backup</em>, grades them for the record and never publishes them, because the books guard needs three sportsbooks:</p>
+      <div class="cluster" style="--cluster:6px">{dfs.map((b) => <span class="chip chip--outline">{b}</span>)}</div>
+      <h3>Credits</h3>
+      <p>Listing the slate is free; pricing a game costs one credit per market per region. A full 10–12-game day runs about 200–250 credits (night-before 30–40, morning 40–60 with combos, each fill run 30–40, snapshots 40–80), about 6,000–7,500 a month. A run stops buying at 150 credits or when fewer than 25 are left.</p>
+      <h3>Line history</h3>
+      <p>Every save of the day's price cache appends a snapshot to <code>logs/lines_{'{date}'}.json</code>, so each prop has an opening line, its moves and a close. A close counts only when the market was re-priced within 90 minutes of tip.</p>
+    </Dialog>
+  </div>
+
+  <script src="../../scripts/nba-live.ts"></script>
+  <script src="../../scripts/nba-board.ts"></script>
 </Base>
+
+<style is:global>
+  /* Chart internals are injected as HTML, so these rules must be global. */
+  .nba-hero__chart .ch { width: 100%; height: 100%; }
+  .nba-hero__chart .ch text, .nba-hero__chart .ch .ch-axis, .nba-hero__chart .ch .ch-grid { display: none; }
+  .nba-hero__chart .ch .ch-zero { stroke: color-mix(in srgb, var(--wood) 75%, transparent); stroke-dasharray: 4 8; stroke-width: 1.5; }
+  .nba-hero__chart .ch .ch-area { opacity: 0.26 !important; }
+  .nba-hero__chart .ch .ch-line { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  .nba-chart .ch { font-size: 12px; }
+  .nba-chart .ch .ch-dot { stroke: var(--bg-elev); }
+  .nba-scroll { overflow-x: auto; scrollbar-width: thin; }
+  @media (max-width: 640px) { .nba-scroll .ch { min-width: 620px; } }
+  .nba-seasons .nba-seasons__name { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 1.2rem; letter-spacing: 0.04em; font-weight: 400; color: var(--fg); }
+  .nba-seasons .nba-seasons__span { display: block; font-family: var(--font-mono); font-size: 0.72rem; color: var(--fg-3); letter-spacing: 0.04em; font-weight: 400; margin-top: 2px; white-space: nowrap; }
+  .nba-seasons th[scope='row'] { background: transparent; position: static; font-family: var(--font-body); text-transform: none; letter-spacing: 0; font-size: inherit; color: var(--fg); min-width: 200px; }
+  .nba-seasons tr.nba-seasons__all td, .nba-seasons tr.nba-seasons__all th { border-top: 2px solid var(--line-strong); background: color-mix(in srgb, var(--wood) 7%, transparent); }
+  .nba-seasons td.num b { font-family: var(--font-display); font-size: 1.25rem; letter-spacing: 0.04em; font-weight: 400; }
+  .nba-seasons .badge--live { font-size: 0.62rem; padding: 3px 6px; }
+</style>
+
+<style>
+  .nba { --plank: color-mix(in srgb, var(--wood) 14%, transparent); }
+  .nba-sep { width: 1px; height: 14px; background: var(--line-strong); display: inline-block; }
+  .nba-stack { flex: 1; justify-content: center; }
+  @media (max-width: 900px) { .nba-stack { display: none; } }
+
+  /* ---- Hero ---- */
+  .nba-hero { padding-top: clamp(40px, 6vw, 72px); padding-bottom: clamp(150px, 20vw, 250px); background: var(--bg-sunk); }
+  .nba-hero__bg {
+    background:
+      radial-gradient(1100px 560px at 4% -10%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 62%),
+      radial-gradient(760px 480px at 96% 4%, color-mix(in srgb, var(--hl) 14%, transparent), transparent 60%),
+      repeating-linear-gradient(90deg, transparent 0 119px, var(--plank) 119px 120px),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-sunk) 70%, var(--bg)) 0%, var(--bg) 100%);
+  }
+  .nba-hero__court { position: absolute; top: -8%; right: -6%; width: min(560px, 48vw); opacity: 0.9; mask-image: linear-gradient(180deg, #000 30%, transparent 95%); -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 95%); }
+  .nba-hero__chart { position: absolute; left: 0; right: 0; bottom: -4px; aspect-ratio: 1400 / 400; max-height: 68%; mask-image: linear-gradient(180deg, transparent 0%, #000 40%); -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 40%); }
+  .nba-hero__grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
+  .nba-hero__copy h1 { margin-top: 4px; }
+  .nba-hero__copy .lead { margin-top: 22px; }
+  .nba-hero__claim { display: flex; gap: 12px; align-items: flex-start; margin-top: 22px; padding: 14px 16px; border-left: 3px solid var(--hl); background: color-mix(in srgb, var(--hl) 10%, transparent); border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.98rem; color: var(--fg-2); max-width: 58ch; }
+  .nba-hero__claim :global(svg) { color: var(--hl); flex: none; margin-top: 2px; }
+  .nba-hero .hero__actions { margin-top: 30px; }
+
+  .nba-score { background: color-mix(in srgb, var(--bg-elev) 88%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-2); padding: 22px 26px 24px; position: relative; overflow: hidden; }
+  .nba-score::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: repeating-linear-gradient(90deg, var(--wood-deep) 0 72px, var(--wood) 72px 144px); }
+  .nba-score__head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .nba-score__record { display: flex; align-items: baseline; gap: 16px; margin-top: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .nba-score__wl { font-family: var(--font-display); font-size: clamp(4rem, 3rem + 4vw, 6.4rem); line-height: 0.9; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; color: var(--fg); }
+  .nba-score__wl-label { font-size: 0.9rem; color: var(--fg-2); line-height: 1.35; }
+  .nba-score__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; margin-top: 18px; }
+  .nba-score__cell dt { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); }
+  .nba-score__cell dd { font-family: var(--font-display); font-size: clamp(1.9rem, 1.4rem + 1.4vw, 2.6rem); line-height: 1; letter-spacing: 0.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .nba-score__foot { margin-top: 18px; display: grid; gap: 6px; font-size: 0.88rem; color: var(--fg-2); }
+  .nba-score__foot li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .nba-score__foot :global(svg) { color: var(--fg-3); flex: none; }
+  .nba-score__prev { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); color: var(--fg-3); }
+  @media (max-width: 960px) {
+    .nba-hero { padding-bottom: clamp(120px, 24vw, 200px); }
+    .nba-hero__grid { grid-template-columns: 1fr; }
+    .nba-hero__court { width: 70vw; right: -20%; top: -4%; opacity: 0.5; }
+    .nba-hero__chart { width: 200%; left: -50%; right: auto; max-height: none; }
+  }
+
+  /* ---- Jump bar ---- */
+  .nba-jump { position: sticky; top: var(--nav-h); z-index: 40; background: color-mix(in srgb, var(--bg) 84%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .nba-jump__inner { display: flex; align-items: center; gap: 4px; height: 46px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+  .nba-jump__inner::-webkit-scrollbar { display: none; }
+  .nba-jump__label { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); margin-right: 10px; flex: none; }
+  .nba-jump a { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: 0.06em; padding: 6px 12px; border-radius: 6px; color: var(--fg-2); transition: color 0.2s, background 0.2s; flex: none; }
+  .nba-jump a:hover { color: var(--fg); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+
+  /* ---- Sections ---- */
+  .nba-section--plank { position: relative; }
+  .nba-section--plank::before { content: ''; position: absolute; top: -1px; left: 0; right: 0; height: 6px; background: repeating-linear-gradient(90deg, var(--wood-deep) 0 96px, var(--wood) 96px 192px); opacity: 0.55; }
+
+  /* ---- Method ---- */
+  .nba-method { display: grid; grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
+  .nba-method__aside { position: sticky; top: calc(var(--nav-h) + 62px); display: grid; gap: 18px; }
+  .nba-pick { margin: 0; }
+  .nba-pick figcaption { margin-top: 12px; font-size: 0.86rem; color: var(--fg-3); line-height: 1.5; }
+  .nba-pick__card { background: var(--bg-elev); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); padding: 18px 20px 16px; box-shadow: var(--shadow-2); position: relative; overflow: hidden; }
+  .nba-pick__card::after { content: ''; position: absolute; inset: auto 0 0 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--hl)); }
+  .nba-pick__top { display: flex; align-items: center; gap: 12px; }
+  .nba-pick__rank { font-family: var(--font-display); font-size: 1.4rem; color: var(--accent); letter-spacing: 0.04em; }
+  .nba-pick__who { display: grid; flex: 1; min-width: 0; }
+  .nba-pick__who b { font-size: 1.05rem; }
+  .nba-pick__who span { font-size: 0.72rem; color: var(--fg-3); letter-spacing: 0.06em; }
+  .nba-pick__play { display: flex; align-items: baseline; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .nba-pick__line { font-family: var(--font-display); font-size: 2.4rem; line-height: 1; letter-spacing: 0.02em; }
+  .nba-pick__stat { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); }
+  .nba-pick__price { margin-left: auto; font-size: 0.82rem; color: var(--fg-2); }
+  .nba-pick__edge { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .nba-pick__edge dt { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
+  .nba-pick__edge dd { font-family: var(--font-display); font-size: 1.35rem; margin-top: 2px; letter-spacing: 0.03em; }
+  .nba-pick__edge .is-edge { border-left: 1px solid var(--line); padding-left: 8px; }
+  .nba-pick__edge .is-edge dd { color: var(--pos); }
+  .nba-pick__hr { display: flex; justify-content: space-between; margin-top: 12px; font-size: 0.8rem; color: var(--fg-3); }
+  .nba-method__cta { display: grid; gap: 8px; justify-items: start; }
+  .nba-method__cta p { margin: 0; }
+  .nba-steps { margin: 0; }
+  .nba-steps .step h3 { font-size: clamp(1.3rem, 1.1rem + 0.7vw, 1.7rem); letter-spacing: 0.04em; }
+  .nba-steps .step p { max-width: 62ch; }
+  .nba-steps .step:first-child { border-top: 0; padding-top: 0; }
+  @media (max-width: 960px) {
+    .nba-method { grid-template-columns: 1fr; }
+    .nba-method__aside { position: static; }
+  }
+
+  /* ---- Side chips (also used by the post-mortem and the example card) ---- */
+  .nba-side { display: inline-block; font-family: var(--font-display); font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px 2px; border-radius: 4px; line-height: 1; }
+  .nba-side--over { color: var(--pos); background: color-mix(in srgb, var(--pos) 14%, transparent); }
+  .nba-side--under { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+
+  /* ---- Record ---- */
+  .nba-record__head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px 48px; align-items: end; margin-bottom: clamp(24px, 4vw, 40px); }
+  .nba-record__head :global(.section-head) { margin-bottom: 0; }
+  .nba-live { display: grid; gap: 10px; justify-items: start; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--bg-elev); max-width: 420px; }
+  .nba-live__state { display: inline-flex; align-items: center; gap: 8px; }
+  .nba-live__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--fg-3); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fg-3) 25%, transparent); }
+  [data-live-state='live'] .nba-live__dot { background: var(--pos); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pos) 30%, transparent); }
+  [data-live-state='error'] .nba-live__dot { background: var(--neg); box-shadow: 0 0 0 3px color-mix(in srgb, var(--neg) 30%, transparent); }
+  .nba-live__status { margin: 0; color: var(--fg-3); max-width: none; }
+  [data-live-state='error'] .nba-live__status { color: var(--warn); }
+  [data-live-state='live'] .nba-live__status { color: var(--pos); }
+  .btn.is-loading :global(.nba-live__ico) { animation: nba-spin 0.9s linear infinite; }
+  @keyframes nba-spin { to { transform: rotate(360deg); } }
+  .nba-record { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(16px, 2.4vw, 28px); margin-bottom: clamp(16px, 2.4vw, 28px); }
+  @media (max-width: 960px) { .nba-record { grid-template-columns: 1fr; } .nba-record__head { grid-template-columns: 1fr; align-items: start; } }
+
+  /* ---- Splits ---- */
+  .nba-splits { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: clamp(16px, 2.4vw, 28px); align-items: start; }
+  .nba-splits__side { display: grid; gap: clamp(16px, 2.4vw, 28px); }
+  .nba-tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--bg-sunk); border: 1px solid var(--line); }
+  .nba-tab { padding: 6px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; color: var(--fg-2); transition: background 0.2s, color 0.2s; }
+  .nba-tab:hover { color: var(--fg); }
+  .nba-tab[aria-selected='true'] { background: var(--accent); color: var(--accent-fg); }
+  .nba-meters { display: grid; gap: 10px; margin-top: 6px; }
+  .nba-meter { display: grid; grid-template-columns: 112px 1fr 58px; gap: 12px; align-items: center; }
+  .nba-meter__label { display: grid; font-family: var(--font-display); font-size: 1.1rem; letter-spacing: 0.06em; line-height: 1; }
+  .nba-meter__label small { font-size: 0.7rem; color: var(--fg-3); letter-spacing: 0.04em; margin-top: 3px; }
+  .nba-meter__bar { position: relative; height: 14px; border-radius: 4px; background: var(--bg-sunk); overflow: visible; }
+  .nba-meter__bar i { position: absolute; inset: 0 auto 0 0; width: calc(var(--v) / 70 * 100%); border-radius: 4px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, var(--wood)), var(--accent)); transform-origin: left; transition: width 0.8s var(--ease-out); }
+  .nba-meter__be { position: absolute; top: -5px; bottom: -5px; left: calc(52.4 / 70 * 100%); width: 0; border-left: 2px dotted var(--hl); }
+  .nba-meter__val { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: 0.03em; text-align: right; font-variant-numeric: tabular-nums; }
+  .nba-grades { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  .nba-gradetile { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-sunk); }
+  .nba-gradetile__body { display: grid; line-height: 1.2; }
+  .nba-gradetile__body b { font-family: var(--font-display); font-size: 1.4rem; letter-spacing: 0.04em; font-weight: 400; }
+  .nba-gradetile__u { margin-left: auto; font-family: var(--font-display); font-size: 1.3rem; letter-spacing: 0.03em; }
+  .nba-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .nba-sidetile { display: grid; gap: 4px; justify-items: start; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-sunk); }
+  .nba-sidetile__rec { font-family: var(--font-display); font-size: 2rem; line-height: 1; letter-spacing: 0.04em; font-weight: 400; margin-top: 6px; }
+  .nba-sidetile__u { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: 0.03em; }
+  @media (max-width: 960px) { .nba-splits { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) { .nba-grades { grid-template-columns: 1fr; } .nba-meter { grid-template-columns: 88px 1fr 54px; } }
+
+  /* ---- Board ---- */
+  .nba-board-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px 48px; align-items: end; margin-bottom: clamp(24px, 4vw, 40px); }
+  .nba-board-head :global(.section-head) { margin-bottom: 0; }
+  .nba-clv { display: grid; grid-template-columns: repeat(3, auto); gap: 14px 28px; padding: 18px 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--bg-elev); }
+  .nba-clv dt { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); white-space: nowrap; }
+  .nba-clv dd { font-family: var(--font-display); font-size: 1.6rem; line-height: 1; letter-spacing: 0.03em; margin-top: 4px; }
+  .nba-clv dd .muted { font-size: 0.9rem; }
+  @media (max-width: 960px) { .nba-board-head { grid-template-columns: 1fr; align-items: start; } .nba-clv { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 480px) { .nba-clv { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  /* ---- Learning loop ---- */
+  .nba-learn { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: clamp(16px, 2.4vw, 28px); align-items: start; }
+  .nba-learn__col { display: grid; gap: clamp(16px, 2.4vw, 28px); }
+  .nba-console__mode { display: inline-flex; align-items: center; gap: 8px; color: var(--warn); }
+  .nba-console__mode i { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); animation: pulse 2.4s ease-in-out infinite; }
+  .nba-console__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 16px; }
+  .nba-console__grid dt { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
+  .nba-console__grid dd { font-family: var(--font-display); font-size: 2rem; line-height: 1; letter-spacing: 0.03em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .nba-gate { padding: 22px 24px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--bg-elev); }
+  .nba-gate h3 { display: flex; align-items: center; gap: 10px; font-size: 1.5rem; letter-spacing: 0.05em; }
+  .nba-gate h3 :global(svg) { color: var(--accent); }
+  .nba-gate p { margin-top: 10px; color: var(--fg-2); font-size: 0.97rem; }
+  .nba-gate__now { padding: 10px 14px; border-radius: var(--radius); background: color-mix(in srgb, var(--warn) 12%, transparent); border-left: 3px solid var(--warn); color: var(--fg); }
+  .nba-rebuilt h3 { font-size: 1.4rem; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .nba-rebuilt p { font-size: 0.95rem; color: var(--fg-2); max-width: none; }
+  .nba-pm__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 16px; }
+  .nba-pm__h { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 1.3rem; letter-spacing: 0.06em; font-weight: 400; margin-bottom: 8px; }
+  .nba-pm__list { display: grid; gap: 8px; }
+  .nba-pm__list li { display: grid; gap: 2px; padding: 10px 12px; background: var(--bg-sunk); border-radius: var(--radius); }
+  .nba-pm__seg { font-size: 0.85rem; color: var(--fg-2); }
+  .nba-pm__num { font-family: var(--font-mono); font-size: 0.8rem; }
+  .nba-pm__num b { font-family: var(--font-display); font-size: 1.1rem; letter-spacing: 0.04em; font-weight: 400; margin-right: 4px; }
+  .nba-pm .panel__body > .nba-pm__h { margin-top: 20px; }
+  .nba-pm__misses { display: grid; gap: 6px; }
+  .nba-pm__misses li { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.9rem; }
+  .nba-pm__player { font-weight: 600; }
+  .nba-pm__play { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 0.82rem; }
+  .nba-pm__play .nba-side { font-size: 0.85rem; }
+  .nba-pm__actual { font-family: var(--font-mono); font-size: 0.8rem; color: var(--fg-3); white-space: nowrap; }
+  .nba-pm__actual b { color: var(--neg); font-size: 1rem; }
+  @media (max-width: 960px) { .nba-learn { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .nba-pm__cols { grid-template-columns: 1fr; } .nba-console__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .nba-pm__misses li { grid-template-columns: 1fr; gap: 4px; } }
+
+  /* ---- Pipeline, links ---- */
+  .nba-ops { margin-top: clamp(28px, 4vw, 44px); }
+  .nba-ops h3 { font-size: 1.45rem; letter-spacing: 0.05em; }
+  .nba-link { display: grid; gap: 10px; align-content: start; color: var(--fg); }
+  .nba-link :global(svg.ico) { width: 30px; height: 30px; color: var(--accent); }
+  .nba-link h3 { font-size: 1.55rem; letter-spacing: 0.05em; }
+  .nba-link p { font-size: 0.95rem; color: var(--fg-2); margin: 0; }
+  .nba-link__go { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--fg-3); margin-top: 6px; }
+  .nba-link:hover .nba-link__go { color: var(--accent); }
+  .nba-link .arrow { transition: transform 0.25s var(--ease-out); }
+  .nba-link:hover .arrow { transform: translate(2px, -2px); }
+  .nba-links__foot { display: flex; gap: 12px; flex-wrap: wrap; margin-top: clamp(24px, 3vw, 36px); }
+
+  /* ---- Dialog content ---- */
+  .nba-dlg-grades { display: grid; gap: 10px; margin: 16px 0; }
+  .nba-dlg-grades div { display: flex; align-items: center; gap: 12px; font-size: 0.95rem; }
+  .nba-features { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0; padding: 0; }
+  .nba-features code { font-size: 0.8rem; }
+</style>

@@ -1,0 +1,85 @@
+---
+/**
+ * One day of the pipeline on a 24-hour UTC track, from .github/workflows/run-model.yml.
+ * Crons are UTC; the ET labels are the summer (EDT) times the workflow comments give,
+ * an hour earlier from November to mid-March.
+ */
+interface Run { id: string; cron: string; utc: number; et: string; name: string; what: string; group: 'pages' | 'snapshots' }
+const runs: Run[] = [
+  { id: 'night', cron: '30 2 * * *', utc: 2.5, et: '10:30 PM ET', name: 'Night-before board', what: 'Builds tomorrow’s board if the books have posted; otherwise writes nothing and tonight’s board stays up.', group: 'pages' },
+  { id: 'grade', cron: '30 9 * * *', utc: 9.5, et: '5:30 AM ET', name: 'Grading', what: 'Scores every pick against the box scores and attaches its closing-line value, then the learner labels, retrains and writes the post-mortem.', group: 'pages' },
+  { id: 'morning', cron: '15 13 * * *', utc: 13.25, et: '9:15 AM ET', name: 'Morning board', what: 'Re-prices everything, re-checks holds and injuries, and rebuilds the board.', group: 'pages' },
+  { id: 'fill1', cron: '0 17 * * *', utc: 17, et: '1 PM ET', name: 'Fill run', what: 'Re-prices every untipped game; published picks stay pinned, new picks fill the room the caps leave.', group: 'pages' },
+  { id: 'fill2', cron: '0 21 * * *', utc: 21, et: '5 PM ET', name: 'Fill run', what: 'Same again as the books post bench and late props through the afternoon.', group: 'pages' },
+];
+const snapshots = { cron: '15,45 15-23,0-3 * * *', bands: [[15.25, 23.75], [0.25, 3.75]] as [number, number][], et: '11:15 AM to 11:45 PM ET' };
+const pct = (h: number) => `${((h / 24) * 100).toFixed(2)}%`;
+const hours = [0, 6, 12, 18, 24];
+---
+<div class="nba-tl" role="img" aria-label="A day of scheduled runs on a 24-hour UTC track: night-before board at 02:30, grading at 09:30, morning board at 13:15, fill runs at 17:00 and 21:00, closing-line snapshots every 30 minutes from 15:15 to 03:45.">
+  <div class="nba-tl__track">
+    {snapshots.bands.map(([a, b]) => <span class="nba-tl__band" style={`left:${pct(a)};width:${pct(b - a)}`}></span>)}
+    {hours.map((h) => <span class="nba-tl__hour" style={`left:${pct(h)}`}><i></i><b>{String(h).padStart(2, '0')}:00</b></span>)}
+    {runs.map((r, i) => (
+      <span class:list={['nba-tl__run', `nba-tl__run--${r.id}`, { 'nba-tl__run--up': i % 2 === 0 }]} style={`left:${pct(r.utc)}`}>
+        <i></i><span class="nba-tl__lab"><b>{r.name}</b><small>{r.et}</small></span>
+      </span>
+    ))}
+  </div>
+  <div class="nba-tl__legend">
+    <span><i class="nba-tl__key nba-tl__key--run"></i> Board and grading runs, concurrency group <code>pages</code></span>
+    <span><i class="nba-tl__key nba-tl__key--snap"></i> Closing-line snapshots at :15 and :45, group <code>snapshots</code> ({snapshots.et})</span>
+  </div>
+</div>
+<ol class="nba-runs" role="list">
+  {runs.map((r, i) => (
+    <li class="nba-runs__item reveal" style={`--i:${i + 1}`}>
+      <span class="nba-runs__time"><b>{r.et}</b><code>{r.cron}</code></span>
+      <h4>{r.name}</h4>
+      <p>{r.what}</p>
+    </li>
+  ))}
+  <li class="nba-runs__item nba-runs__item--snap reveal" style="--i:6">
+    <span class="nba-runs__time"><b>Every 30 min</b><code>{snapshots.cron}</code></span>
+    <h4>Closing-line snapshots</h4>
+    <p>Re-price only the games tipping within the next 45 minutes, so every game from a noon matinee to the last late tip gets a verified close. They never touch the board, skip the export and the deploy, and commit only the day's price cache and line history.</p>
+  </li>
+</ol>
+
+<style>
+  .nba-tl { padding: 8px 0 0; }
+  .nba-tl__track { position: relative; height: 150px; margin: 0 8px; border-bottom: 0; }
+  .nba-tl__track::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: color-mix(in srgb, var(--wood) 60%, transparent); }
+  .nba-tl__band { position: absolute; top: calc(50% - 10px); height: 20px; border-radius: 3px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--hl) 45%, transparent) 0 3px, transparent 3px 9px); border: 1px solid color-mix(in srgb, var(--hl) 45%, transparent); }
+  .nba-tl__hour { position: absolute; top: 50%; transform: translateX(-50%); display: grid; justify-items: center; }
+  .nba-tl__hour i { display: block; width: 1px; height: 12px; background: var(--line-strong); margin-top: -6px; }
+  .nba-tl__hour b { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; color: var(--fg-3); font-weight: 500; margin-top: 56px; }
+  .nba-tl__run { position: absolute; top: 50%; transform: translate(-50%, -50%); display: grid; justify-items: center; }
+  .nba-tl__run i { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 3px solid var(--bg); box-shadow: 0 0 0 2px var(--accent); }
+  .nba-tl__lab { position: absolute; top: 20px; display: grid; justify-items: center; text-align: center; white-space: nowrap; }
+  .nba-tl__run--up .nba-tl__lab { top: auto; bottom: 20px; }
+  .nba-tl__lab b { font-family: var(--font-display); font-size: 1rem; letter-spacing: 0.06em; line-height: 1; }
+  .nba-tl__lab small { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.06em; color: var(--fg-3); margin-top: 3px; }
+  .nba-tl__run--grade i { background: var(--pos); box-shadow: 0 0 0 2px var(--pos); }
+  .nba-tl__legend { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 0.82rem; color: var(--fg-2); margin-top: 18px; }
+  .nba-tl__legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .nba-tl__key { width: 22px; height: 10px; border-radius: 3px; display: inline-block; }
+  .nba-tl__key--run { background: var(--accent); height: 4px; }
+  .nba-tl__key--snap { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--hl) 45%, transparent) 0 3px, transparent 3px 9px); border: 1px solid color-mix(in srgb, var(--hl) 45%, transparent); }
+  .nba-runs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 2vw, 22px); margin-top: clamp(28px, 4vw, 44px); }
+  .nba-runs__item { display: grid; gap: 8px; align-content: start; padding: 20px 20px 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--bg-elev); border-top: 3px solid var(--accent); }
+  .nba-runs__item--snap { border-top-color: var(--hl); }
+  .nba-runs__time { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .nba-runs__time b { font-family: var(--font-display); font-size: 1.35rem; letter-spacing: 0.04em; line-height: 1; }
+  .nba-runs__time code { font-size: 0.72rem; color: var(--fg-3); background: var(--bg-sunk); }
+  .nba-runs h4 { font-family: var(--font-body); font-weight: 700; font-size: 1rem; letter-spacing: 0; }
+  .nba-runs p { font-size: 0.92rem; color: var(--fg-2); }
+  @media (max-width: 960px) { .nba-runs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 720px) {
+    .nba-tl__track { height: 118px; margin: 0 4px; }
+    .nba-tl__lab b { display: none; }
+    .nba-tl__lab small { font-size: 0.6rem; }
+    .nba-tl__hour b { margin-top: 44px; font-size: 0.62rem; }
+    .nba-runs { grid-template-columns: 1fr; }
+  }
+</style>

@@ -1,0 +1,15 @@
+---
+/**
+ * A code sheet for the Sleeper tab: a mono header (label on the left, the HTTP path or
+ * source file on the right), the highlighted Java, and an optional note in the slot.
+ */
+import { java, escapeHtml } from './highlight';
+interface Props { label: string; http?: string; code: string; class?: string; lang?: 'java' | 'text'; style?: string }
+const { label, http, code, class: cls = '', lang = 'java', style } = Astro.props;
+const html = lang === 'java' ? java(code) : escapeHtml(code);
+---
+<figure class:list={['sl-code', cls]} style={style}>
+  <figcaption class="sl-code__head"><span class="sl-code__label">{label}</span>{http && <span class="sl-code__http">{http}</span>}</figcaption>
+  <pre class="sl-code__pre"><code set:html={html}></code></pre>
+  <slot />
+</figure>

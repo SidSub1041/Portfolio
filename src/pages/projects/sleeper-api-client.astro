@@ -1,6 +1,596 @@
 ---
+/**
+ * Sleeper API Java Client tab. Design: an engineering blueprint. Deep blue, a white
+ * drafting grid, cyan ink, mono labels, bracketed section numbers, crop marks on cards.
+ * Every number comes from src/data/sleeper.json or the Fantasy-Football-Draft-Assistant
+ * repository (README.md, build.gradle, .circleci/config.yml, src/main/java).
+ */
 import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import Dialog from '../../components/Dialog.astro';
+import SectionHead from '../../components/SectionHead.astro';
+import Stat from '../../components/Stat.astro';
+import Sheet from '../../components/sleeper/Sheet.astro';
+import Schematic from '../../components/sleeper/Schematic.astro';
+import CodeBlock from '../../components/sleeper/CodeBlock.astro';
+import { endpoints, derivedHelpers, groupOrder, groupMeta, readmeExamples, build } from '../../components/sleeper/data';
+import { java } from '../../components/sleeper/highlight';
+import { projects, projectById } from '../../data/projects';
+import { url } from '../../site.config';
+import sleeper from '../../data/sleeper.json';
+
+const p = projectById.sleeper;
+const draft = projectById.draft;
+const groups = sleeper.groups as Record<string, string[]>;
+const files = sleeper.files;
+const javaLines = sleeper.javaLines;
+const testClasses = sleeper.tests;
+const groupCount = Object.keys(groups).length;
+const endpointCount = endpoints.length;
+const maxFiles = Math.max(...Object.values(groups).map((g) => g.length));
+const shortName = (s: string) => s.split('.').pop() ?? s;
+const others = projects.filter((x) => x.id !== 'sleeper');
+const repoLink = p.links.find((l) => l.kind === 'repo')!;
+const docLinks = p.links.filter((l) => l.kind !== 'repo');
+const groupId = (g: string) => `sl-group-${g.replace(/[()]/g, '') || 'root'}`;
+const seasons = [2026, 2025, 2024, 2023];
+const description = `${p.oneLiner} A fork of sdcalmes/sleeper-api: ${files} Java files and ${javaLines.toLocaleString('en-US')} lines across ${groupCount} package groups, ${endpointCount} wrapped endpoints, Gradle, JUnit and CircleCI, plus a live API explorer.`;
 ---
-<Base title="sleeper-api-client placeholder" theme="sleeper">
-  <section class="hero"><div class="container"><span class="kicker"><span class="dot"></span> sleeper theme</span><h1>sleeper-api-client</h1><p class="lead">Placeholder page, theme check only.</p></div></section>
+<Base title={`${p.name} — Sid Subramanian`} description={description} theme="sleeper">
+  <div class="sl">
+    <!-- Project bar -->
+    <div class="container">
+      <div class="proj-bar">
+        <div class="row">
+          <span class="mono muted">{p.period}</span>
+          <span class="badge badge--soft">{p.status}</span>
+          <span class="cluster" style="--cluster:6px">{p.stack.map((s) => <span class="chip chip--outline">{s}</span>)}</span>
+        </div>
+        <div class="proj-bar__links">
+          {p.links.map((l) => <a class="btn btn--ghost btn--sm" href={l.url}><Icon name={l.kind === 'repo' ? 'github' : 'arrow-up-right'} size={15} /> {l.label}</a>)}
+        </div>
+      </div>
+    </div>
+
+    <!-- [00] Hero -->
+    <section class="hero sl-hero grain" id="top">
+      <div class="hero__bg sl-hero__bg" aria-hidden="true">
+        <div class="sl-hero__glow" data-parallax="0.08"></div>
+        <div class="sl-hero__glow sl-hero__glow--hl" data-parallax="0.05"></div>
+        <svg class="sl-mark sl-mark--tl" viewBox="-12 -12 24 24"><circle r="6" /><path d="M-11 0h22M0 -11v22" /></svg>
+        <svg class="sl-mark sl-mark--tr" viewBox="-12 -12 24 24"><circle r="6" /><path d="M-11 0h22M0 -11v22" /></svg>
+        <svg class="sl-mark sl-mark--bl" viewBox="-12 -12 24 24"><circle r="6" /><path d="M-11 0h22M0 -11v22" /></svg>
+        <svg class="sl-mark sl-mark--br" viewBox="-12 -12 24 24"><circle r="6" /><path d="M-11 0h22M0 -11v22" /></svg>
+      </div>
+      <div class="container">
+        <div class="sl-hero__grid">
+          <div>
+            <span class="kicker reveal"><span class="dot"></span> Drawing 05 · Java library · {p.period}</span>
+            <h1 class="reveal" style="--i:1">{p.name}</h1>
+            <p class="lead reveal" style="--i:2">{p.oneLiner} Users, leagues, drafts, players and stats mapped to plain Java objects, built with Gradle, tested with JUnit on CircleCI.</p>
+            <p class="sl-lineage reveal" style="--i:3"><Icon name="branch" size={18} /><span><b>Lineage:</b> a fork of sdcalmes/sleeper-api, extended toward a draft assistant.</span></p>
+            <div class="sl-dim reveal" style="--i:4"><span class="sl-dim__line"></span><span class="sl-dim__label"><b data-count={javaLines} data-format="int">{javaLines.toLocaleString('en-US')}</b> lines of Java · {files} files</span><span class="sl-dim__line"></span></div>
+            <div class="hero__actions reveal" style="--i:5">
+              <a class="btn btn--primary" href={repoLink.url}><Icon name="github" size={17} /> {repoLink.label}</a>
+              {docLinks.map((l) => <a class="btn btn--ghost" href={l.url}>{l.label} <Icon name="arrow-up-right" class="arrow" size={16} /></a>)}
+            </div>
+            <div class="hero__meta reveal" style="--i:6">
+              <span class="chip chip--accent">Java {build.java}</span>
+              <span class="chip">Retrofit 2.6.0</span>
+              <span class="chip">Gson 2.8.9</span>
+              <span class="chip">JUnit 4.12</span>
+              <span class="chip">CircleCI</span>
+            </div>
+          </div>
+          <Sheet />
+        </div>
+      </div>
+    </section>
+
+    <!-- [01] Coverage -->
+    <section class="section sl-section" data-num="[01]" id="coverage">
+      <div class="container">
+        <SectionHead eyebrow="[01] Coverage" title="Eight package groups, one Retrofit client" lead="Each endpoint group is a Java package: an interface that declares the GET paths, an Impl class that executes the call and parses errors, and plain Java objects for the JSON." />
+        <div class="stat-row sl-stats reveal">
+          <Stat label="Lines of Java" value={javaLines.toLocaleString('en-US')} count={javaLines} format="int" sub="src/main/java only" />
+          <Stat label="Source files" value={String(files)} count={files} format="int" sub={`${groupCount} package groups`} />
+          <Stat label="Endpoints wrapped" value={String(endpointCount)} count={endpointCount} format="int" sub="GET paths in the interfaces" />
+          <Stat label="JUnit test classes" value={String(testClasses.length)} count={testClasses.length} format="int" sub="run by CircleCI" />
+        </div>
+        <div class="sl-coverage-actions reveal" style="--i:1">
+          <button type="button" class="btn btn--soft btn--sm" data-dialog-open="sl-endpoints"><Icon name="table" size={16} /> Endpoint reference</button>
+          <button type="button" class="btn btn--ghost btn--sm" data-dialog-open="sl-index"><Icon name="layers" size={16} /> Package index, all {files} classes</button>
+        </div>
+        <div class="sl-groups">
+          {groupOrder.map((g, i) => {
+            const classes = groups[g];
+            const meta = groupMeta[g];
+            const shown = classes.slice(0, 6);
+            return (
+              <article class="card card--hover sl-card sl-group reveal" id={groupId(g)} style={`--i:${(i % 4) + 1}; --w:${Math.round((classes.length / maxFiles) * 100)}%`}>
+                <div class="sl-group__top">
+                  <span class="sl-group__name">[{meta.label}]</span>
+                  <span class="sl-group__n"><b>{classes.length}</b> <small>{classes.length === 1 ? 'file' : 'files'}</small></span>
+                </div>
+                <span class="sl-group__ruler" aria-hidden="true"><i></i></span>
+                <p class="sl-group__blurb">{meta.blurb}</p>
+                <div class="sl-group__classes">
+                  {shown.map((c) => <span class:list={['sl-group__cls', { 'sl-group__cls--fork': shortName(c) === 'footballDraft' }]}>{shortName(c)}</span>)}
+                  {classes.length > shown.length && <button type="button" class="sl-group__cls sl-group__cls--more" data-dialog-open="sl-index">+{classes.length - shown.length} more</button>}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        <div class="callout sl-callout reveal" style="margin-top:28px">
+          <Icon name="info" size={18} />
+          <p><b>Upstream's own caveat, still in the README:</b> the adapter is "incomplete, does not error check, and most likely has some poor choices when it comes to architecture." This page does not pretend otherwise. The endpoint reference above lists exactly what is wrapped.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- [02] Code -->
+    <section class="section sl-section sl-section--sunk sl-grid-bg" data-num="[02]" id="code">
+      <div class="container">
+        <SectionHead eyebrow="[02] Usage" title="Five calls from the README" lead="The README documents the client in five lines. They are quoted as written; the yellow placeholders are the README's own. Each one maps to a single GET below." />
+        <div class="sl-code-grid">
+          {readmeExamples.map((ex, i) => (
+            <CodeBlock class:list={['reveal', { 'sl-code--wide': ex.id === 'client' }]} label={ex.label} http={ex.http} code={ex.code} style={`--i:${i}`}>
+              {ex.id === 'client' && <p class="sl-code__note">One object, every group behind it: <code>users()</code>, <code>leagues()</code>, <code>drafts()</code>, <code>players()</code>, <code>stats()</code>. The constructor wires a static Retrofit instance over an OkHttp client with a 2 MB disk cache.</p>}
+              {ex.id === 'user' && <p class="sl-code__note">The first call everything else needs: it returns the <code>user_id</code> that the league and draft endpoints take.</p>}
+              {ex.id === 'leagues' && <p class="sl-code__note">Season is a string in the Java signature, for example <code>"2026"</code>. Leagues come back with their settings, scoring and roster positions.</p>}
+              {ex.id === 'drafts' && <p class="sl-code__note">Every draft the user took part in that season: type, status, rounds, teams, start time and the ids to fetch picks.</p>}
+              {ex.id === 'players' && <div class="sl-code__note sl-code__note--warn"><b>Once a day, at most.</b> Sleeper asks that this call run sparingly: it exists to refresh player ids and the average response is 5 MB. The source actually returns <code>Map&lt;String, Player&gt;</code> keyed by player id; the README's <code>List</code> is a typo in upstream's docs.</div>}
+            </CodeBlock>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- [03] Architecture -->
+    <section class="section sl-section" data-num="[03]" id="architecture">
+      <div class="container">
+        <SectionHead eyebrow="[03] Architecture" title="From request to object" lead="Every call takes the same path. A Retrofit interface declares the GET, the Impl executes it synchronously, Gson maps the JSON onto plain objects, and anything but a 2xx becomes a SleeperError with the status code and the URL that failed." />
+        <div class="sl-schem-frame draw reveal" aria-label="Architecture schematic">
+          <span class="sl-schem-frame__tag">Fig. 3 · call path</span>
+          <Schematic layout="wide" />
+          <Schematic layout="tall" />
+        </div>
+        <div class="grid grid--3 sl-arch-notes">
+          <div class="feature sl-card reveal" style="--i:1"><Icon name="cpu" /><h3>Static transport</h3><p>SleeperApi builds one Retrofit on <code>http://api.sleeper.app/</code> with Gson, over an OkHttp client that caches 2 MB on disk at <code>./cache</code>. Each group gets a thin Impl around <code>retrofit.create(...)</code>.</p></div>
+          <div class="feature sl-card reveal" style="--i:2"><Icon name="shield" /><h3>One error type</h3><p>Every Impl checks <code>r.isSuccessful()</code>. On failure, <code>ErrorUtils.parseError</code> builds a <code>SleeperError</code> with the HTTP status, the message and the request URL, so a caller can log exactly which GET failed.</p></div>
+          <div class="feature sl-card reveal" style="--i:3"><Icon name="database" /><h3>Static metadata</h3><p><code>Metadata</code> holds a shared client, fixes the NFL season at 18 weeks (the comment notes the 2021 change) and exposes the protected <code>states()</code> group through <code>getSportState(Sports.NFL)</code>.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- [04] Explorer -->
+    <section class="section sl-section sl-section--sunk sl-grid-bg" data-num="[04]" id="explorer">
+      <div class="container">
+        <SectionHead eyebrow="[04] Interactive" title="Call the API the way the client does" lead="Type a Sleeper username. The page makes the same three requests the README examples make, straight from your browser to api.sleeper.app, and shows the equivalent Java line for each step." />
+        <div class="card sl-explorer reveal" id="sl-explorer" data-api="https://api.sleeper.app">
+          <div class="sl-explorer__head">
+            <span class="sl-explorer__title"><Icon name="globe" size={18} /> API explorer <span class="badge badge--soft">live · api.sleeper.app</span></span>
+            <button type="button" class="btn btn--ghost btn--sm" data-dialog-open="sl-explorer-notes"><Icon name="info" size={16} /> How this works</button>
+          </div>
+          <form class="sl-explorer__form" id="sl-explorer-form" novalidate>
+            <div class="field"><label for="sl-username">Sleeper username</label><input id="sl-username" name="username" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="username, not display name" maxlength="64" required /></div>
+            <div class="field"><label for="sl-season">Season</label><select id="sl-season" name="season">{seasons.map((y) => <option value={String(y)} selected={y === 2026}>{y}</option>)}</select></div>
+            <button class="btn btn--primary" type="submit" id="sl-run"><Icon name="play" size={16} /> Run the calls</button>
+          </form>
+          <p class="sl-explorer__status" id="sl-explorer-status" aria-live="polite">Nothing is stored, logged or proxied. Requests go from this page to api.sleeper.app over HTTPS.</p>
+          <ol class="sl-trace" role="list">
+            <li class="sl-step" id="sl-step-user" data-status="idle">
+              <div class="sl-step__rail"><span class="sl-step__n">1</span></div>
+              <div class="sl-step__body">
+                <div class="sl-step__head"><span class="sl-step__title">users().getByUsername</span><span class="sl-step__pill" data-role="status">waiting</span><span class="sl-step__ms" data-role="ms"></span></div>
+                <pre class="sl-step__java"><code data-role="java" set:html={java('User user = sleeper.users().getByUsername({username});')}></code></pre>
+                <p class="sl-step__http" data-role="http">GET https://api.sleeper.app/v1/user/{'{username}'}</p>
+                <div class="sl-step__out" data-role="out"></div>
+              </div>
+            </li>
+            <li class="sl-step" id="sl-step-leagues" data-status="idle">
+              <div class="sl-step__rail"><span class="sl-step__n">2</span></div>
+              <div class="sl-step__body">
+                <div class="sl-step__head"><span class="sl-step__title">leagues().getAllLeaguesForUserBySeason</span><span class="sl-step__pill" data-role="status">waiting</span><span class="sl-step__ms" data-role="ms"></span></div>
+                <pre class="sl-step__java"><code data-role="java" set:html={java('List<League> leagues = sleeper.leagues().getAllLeaguesForUserBySeason({user_id}, {season});')}></code></pre>
+                <p class="sl-step__http" data-role="http">GET https://api.sleeper.app/v1/user/{'{user_id}'}/leagues/nfl/{'{season}'}</p>
+                <div class="sl-step__out" data-role="out"></div>
+              </div>
+            </li>
+            <li class="sl-step" id="sl-step-drafts" data-status="idle">
+              <div class="sl-step__rail"><span class="sl-step__n">3</span></div>
+              <div class="sl-step__body">
+                <div class="sl-step__head"><span class="sl-step__title">drafts().getAllDraftsForUser</span><span class="sl-step__pill" data-role="status">waiting</span><span class="sl-step__ms" data-role="ms"></span></div>
+                <pre class="sl-step__java"><code data-role="java" set:html={java('List<Draft> drafts = sleeper.drafts().getAllDraftsForUser({user_id}, {season});')}></code></pre>
+                <p class="sl-step__http" data-role="http">GET https://api.sleeper.app/v1/user/{'{user_id}'}/drafts/nfl/{'{season}'}</p>
+                <div class="sl-step__out" data-role="out"></div>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- [05] Where it led -->
+    <section class="section sl-section" data-num="[05]" id="lineage">
+      <div class="container">
+        <SectionHead eyebrow="[05] Where it led" title="One subclass, then a different product" lead="The fork's own change is small, and this page says so. The idea behind it grew into a separate project." />
+        <div class="sl-rev">
+          <div class="card sl-card sl-rev__block reveal">
+            <div class="sl-rev__head"><span>Revision block</span><span>Fantasy-Football-Draft-Assistant</span></div>
+            <div class="table-wrap sl-rev__wrap">
+              <table class="table sl-rev__table">
+                <thead><tr><th>Rev</th><th>When</th><th>Change</th><th>By</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">A</td><td>upstream</td><td>sdcalmes/sleeper-api: a Java adapter for the Sleeper API, MIT licensed, grouped the way the API docs are (Users, Leagues, Drafts, Players).</td><td class="mono">sdcalmes</td></tr>
+                  <tr class="sl-rev__fork"><td class="mono">B</td><td>Jan 2024</td><td><code>footballDraft extends Draft</code> added in Draft/DraftModels: the starting point of a draft assistant.</td><td class="mono">SidSub1041</td></tr>
+                  <tr><td class="mono">C</td><td>{draft.period}</td><td>{draft.name}: the assistant built as its own project in Python, 400 simulated drafts per pick, advises and never picks.</td><td class="mono">SidSub1041</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="sl-rev__side">
+            <div class="card sl-card sl-fork reveal" style="--i:1">
+              <span class="sl-fork__path">src/main/java/com/sdcalmes/sleeper/Draft/DraftModels/footballDraft.java</span>
+              <code class="sl-fork__code"><span class="tk-k">class</span> footballDraft <span class="tk-k">extends</span> <span class="tk-t">Draft</span></code>
+              <p>An empty subclass of the Draft model, with no fields or methods yet. It is the whole of the fork's addition, and it marks where the draft-assistant idea started.</p>
+            </div>
+            <div class="card sl-card sl-next reveal" style="--i:2">
+              <span class="sl-next__eyebrow"><span class="swatch" style={`--swatch:${draft.color}`}></span> Continued as {draft.name}</span>
+              <p class="sl-next__line">{draft.oneLiner}</p>
+              <dl class="kv sl-next__kv">
+                {draft.facts.map((f) => <><dt>{f.label}</dt><dd>{f.value}</dd></>)}
+              </dl>
+              <a class="btn btn--primary btn--sm" href={url(draft.href)}>Open the {draft.tab} tab <Icon name="arrow-right" class="arrow" size={16} /></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- More from the portfolio -->
+    <section class="section section--tight section--bordered sl-section" id="more">
+      <div class="container">
+        <div class="between" style="margin-bottom:22px">
+          <h2 class="sl-more__title reveal">More from the portfolio</h2>
+          <a class="btn btn--ghost btn--sm reveal" href={url('/')}>All projects <Icon name="arrow-right" class="arrow" size={15} /></a>
+        </div>
+        <div class="sl-more">
+          {others.map((o, i) => (
+            <a class="card card--hover sl-card sl-more__card reveal" href={url(o.href)} style={`--swatch:${o.color}; --i:${i + 1}`}>
+              <span class="sl-more__tab"><span class="swatch"></span> {o.tab}</span>
+              <span class="sl-more__name">{o.name}</span>
+              <span class="sl-more__line">{o.oneLiner}</span>
+              <span class="sl-more__go">Open the tab <Icon name="arrow-right" class="arrow" size={15} /></span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Dialogs -->
+  <Dialog id="sl-endpoints" title="Endpoint reference" eyebrow={`${endpointCount} GET paths, as the Retrofit interfaces declare them`} wide>
+    <p>Grouped the way the client is. Paths are relative to the base URL <code>http://api.sleeper.app/</code> set in SleeperApi.java; four of them are declared without the <code>v1/</code> prefix, quoted as found.</p>
+    <div class="table-wrap" style="margin-top:16px">
+      <table class="table sl-ep">
+        <thead><tr><th>Group</th><th>Java</th><th>HTTP</th><th>Returns</th></tr></thead>
+        <tbody>
+          {endpoints.map((e) => (
+            <tr>
+              <td><span class="sl-ep__group">{e.group}</span></td>
+              <td><code>{e.call}</code>{e.note && <span class="sl-ep__note">{e.note}</span>}</td>
+              <td><code class="sl-ep__http">GET {e.http}</code></td>
+              <td><code>{e.returns}</code></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <h3>Composed helpers</h3>
+    <p>Two methods in LeagueImpl build on the calls above instead of declaring their own path.</p>
+    <ul>
+      {derivedHelpers.map((h) => <li><code>{h.call}</code><br /><span class="small muted">{h.detail}</span></li>)}
+    </ul>
+  </Dialog>
+
+  <Dialog id="sl-index" title="Package index" eyebrow={`${files} classes under com.sdcalmes.sleeper, ${testClasses.length} test classes`}>
+    <p>Every class in <code>src/main/java</code>, by package group, from the snapshot of the repository. The fork's addition is marked.</p>
+    <div class="sl-index">
+      {groupOrder.map((g) => (
+        <div class="sl-index__group">
+          <h4 class="sl-index__name">[{groupMeta[g].label}] <span class="muted">{groups[g].length}</span></h4>
+          <ul role="list" class="sl-index__list">
+            {groups[g].map((c) => <li class:list={{ 'is-fork': shortName(c) === 'footballDraft' }}>{c}{shortName(c) === 'footballDraft' && <span class="sl-index__flag">fork</span>}</li>)}
+          </ul>
+        </div>
+      ))}
+      <div class="sl-index__group">
+        <h4 class="sl-index__name">[Tests] <span class="muted">{testClasses.length}</span></h4>
+        <ul role="list" class="sl-index__list">{testClasses.map((t) => <li>{t}</li>)}</ul>
+      </div>
+    </div>
+  </Dialog>
+
+  <Dialog id="sl-build" title="Build and CI" eyebrow="build.gradle and .circleci/config.yml">
+    <p>A Gradle Java library targeting Java {build.java}, published as <code>{build.artifact}</code> {build.version} with sources and javadoc jars. The CircleCI job runs on <code>{build.ciImage}</code>.</p>
+    <h3>Plugins</h3>
+    <ul>{build.plugins.map((pl) => <li><code>{pl}</code></li>)}</ul>
+    <h3>Dependencies</h3>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Scope</th><th>Artifact</th><th class="num">Version</th></tr></thead>
+        <tbody>{build.dependencies.map((d) => <tr><td><code>{d.scope}</code></td><td><code>{d.artifact}</code></td><td class="num">{d.version}</td></tr>)}</tbody>
+      </table>
+    </div>
+    <h3>CircleCI steps</h3>
+    <ol>{build.ciSteps.map((s) => <li>{s}</li>)}</ol>
+    <h3>Test classes</h3>
+    <p class="mono small">{testClasses.join(' · ')}</p>
+    <p class="small muted">The README badge and the publishing coordinates point at the upstream project, sdcalmes/sleeper-api; the fork keeps them as they were.</p>
+  </Dialog>
+
+  <Dialog id="sl-explorer-notes" title="How the explorer works" eyebrow="Three GETs, no server, nothing kept">
+    <p><b>What runs.</b> The same three requests the README examples wrap: the user by username, then that user's leagues and drafts for the chosen season. The Java line above each step is what the client would execute for it.</p>
+    <p><b>Where it runs.</b> In your browser, directly against <code>https://api.sleeper.app</code>. This site is static; there is no server of mine in between and no proxy.</p>
+    <p><b>What is kept.</b> Nothing. No cookies, no local storage, no analytics on this form. Reload the page and the results are gone.</p>
+    <p><b>What it skips.</b> The players dump (<code>v1/players/nfl</code>) is deliberately not wired: it is about 5 MB and Sleeper asks that it run at most once a day.</p>
+    <p><b>When it fails.</b> An unknown username comes back empty from Sleeper and is reported as such. A blocked network or a cross-origin policy shows as a network error. The Java client throws <code>SleeperError</code> for any non-2xx response, carrying the status code and the request URL.</p>
+  </Dialog>
+
+  <script src="../../scripts/sleeper-explorer.ts"></script>
+  <script src="../../scripts/sleeper-sheet.ts"></script>
 </Base>
+
+<style is:global>
+  /* ==== Sleeper tab: engineering blueprint ============================== */
+  .sl { --sl-grid: color-mix(in srgb, var(--fg) 5%, transparent); --sl-grid-strong: color-mix(in srgb, var(--fg) 9%, transparent); }
+  .sl .eyebrow::before { display: none; }
+  .sl .eyebrow { color: var(--accent); letter-spacing: 0.16em; }
+  .sl .proj-bar { font-family: var(--font-mono); }
+  .sl .proj-bar .btn { font-family: var(--font-body); }
+  .sl .chip--outline { border-color: var(--line); }
+  .sl-grid-bg { background-color: var(--bg-sunk); background-image: linear-gradient(var(--sl-grid) 1px, transparent 1px), linear-gradient(90deg, var(--sl-grid) 1px, transparent 1px), linear-gradient(var(--sl-grid-strong) 1px, transparent 1px), linear-gradient(90deg, var(--sl-grid-strong) 1px, transparent 1px); background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px; background-position: center top; }
+  .sl-section { position: relative; }
+  .sl-section::before { content: attr(data-num); position: absolute; right: var(--gutter); top: calc(var(--section) * 0.55); font-family: var(--font-mono); font-size: clamp(3rem, 9vw, 7.5rem); line-height: 1; letter-spacing: -0.06em; color: color-mix(in srgb, var(--fg) 6%, transparent); pointer-events: none; user-select: none; }
+  .sl-section--sunk + .sl-section, .sl-section + .sl-section--sunk { border-top: 1px solid var(--line); }
+
+  /* Hero */
+  .sl-hero { padding-top: clamp(40px, 6vw, 80px); }
+  .sl-hero__bg { background-color: var(--bg); background-image: linear-gradient(var(--sl-grid) 1px, transparent 1px), linear-gradient(90deg, var(--sl-grid) 1px, transparent 1px), linear-gradient(var(--sl-grid-strong) 1px, transparent 1px), linear-gradient(90deg, var(--sl-grid-strong) 1px, transparent 1px); background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px; background-position: center top; -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%); mask-image: linear-gradient(180deg, #000 55%, transparent 100%); overflow: hidden; }
+  .sl-hero__glow { position: absolute; top: -20%; right: -10%; width: 58%; height: 90%; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 26%, transparent), transparent 72%); filter: blur(12px); }
+  .sl-hero__glow--hl { top: auto; right: auto; bottom: -30%; left: -8%; width: 38%; height: 70%; background: radial-gradient(closest-side, color-mix(in srgb, var(--hl) 14%, transparent), transparent 70%); }
+  .sl-mark { position: absolute; width: 26px; height: 26px; fill: none; stroke: var(--accent); stroke-width: 1; opacity: 0.6; }
+  .sl-mark--tl { top: 22px; left: 22px; } .sl-mark--tr { top: 22px; right: 22px; } .sl-mark--bl { bottom: 22px; left: 22px; } .sl-mark--br { bottom: 22px; right: 22px; }
+  .sl-hero__grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
+  .sl-hero h1 { max-width: 12ch; }
+  .sl-lineage { display: flex; gap: 12px; align-items: flex-start; margin-top: 22px; font-family: var(--font-mono); font-size: 0.86rem; line-height: 1.5; color: var(--fg-2); max-width: 56ch; }
+  .sl-lineage svg { color: var(--hl); flex: none; margin-top: 2px; }
+  .sl-lineage b { color: var(--hl); font-weight: 600; }
+  .sl-dim { display: flex; align-items: center; gap: 14px; margin-top: 26px; max-width: 520px; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); white-space: nowrap; }
+  .sl-dim__line { flex: 1; height: 10px; border-inline: 1px solid var(--accent); background: linear-gradient(var(--accent), var(--accent)) center / 100% 1px no-repeat; opacity: 0.85; min-width: 20px; }
+  .sl-dim b { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .sl .hero__meta .chip { background: color-mix(in srgb, var(--bg-elev) 70%, transparent); border-color: var(--line); }
+
+  /* Drawing sheet (hero right) */
+  .sl-sheet { position: relative; background: color-mix(in srgb, var(--bg-elev) 86%, transparent); border: 1px solid var(--line-strong); border-radius: 10px; padding: 8px; box-shadow: var(--shadow-2); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .sl-sheet::before { content: ''; position: absolute; inset: 5px; border: 1px dashed color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 7px; pointer-events: none; }
+  .sl-sheet__head, .sl-sheet__foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 12px; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
+  .sl-sheet__head { border-bottom: 1px solid var(--line); }
+  .sl-sheet__foot { border-top: 1px solid var(--line); text-transform: none; letter-spacing: 0.02em; font-size: 0.74rem; }
+  .sl-sheet__body { padding: 12px 10px 8px; }
+  .sl-link { font-family: var(--font-mono); color: var(--accent); text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; white-space: nowrap; }
+  .sl-link:hover { color: var(--accent-hover); }
+  .sl-tm { width: 100%; height: auto; font-family: var(--font-mono); overflow: visible; }
+  .sl-tm__box { fill: color-mix(in srgb, var(--accent) 9%, transparent); stroke: var(--accent); stroke-width: 1.2; transition: fill 0.25s; }
+  .sl-tm__cell { cursor: pointer; outline: none; }
+  .sl-tm__cell:hover .sl-tm__box, .sl-tm__cell:focus-visible .sl-tm__box { fill: color-mix(in srgb, var(--accent) 26%, transparent); }
+  .sl-tm__cell--fork .sl-tm__box { stroke: var(--hl); fill: color-mix(in srgb, var(--hl) 7%, transparent); }
+  .sl-tm__cell--fork:hover .sl-tm__box, .sl-tm__cell--fork:focus-visible .sl-tm__box { fill: color-mix(in srgb, var(--hl) 20%, transparent); }
+  .sl-tm__name { fill: var(--fg); font-family: var(--font-display); font-weight: 650; letter-spacing: -0.01em; }
+  .sl-tm__count { fill: var(--accent); }
+  .sl-tm__cls { fill: var(--fg-3); }
+  .sl-tm__fork { fill: var(--hl); font-weight: 600; }
+  .draw .sl-tm text, .draw .sl-schem text { opacity: 0; transition: opacity 0.7s ease 0.8s; }
+  .draw.is-in .sl-tm text, .draw.is-in .sl-schem text { opacity: 1; }
+  .sl-tb { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border-block: 1px solid var(--line); margin: 4px 0 0; }
+  .sl-tb > div { background: color-mix(in srgb, var(--bg-elev) 92%, transparent); padding: 9px 12px; min-width: 0; }
+  .sl-tb dt { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 5px; }
+  .sl-tb dd { font-family: var(--font-mono); font-size: 0.74rem; color: var(--fg); overflow-wrap: anywhere; }
+
+  /* Cards with crop marks */
+  .sl-card { border-radius: 8px; }
+  .sl-card::after { content: ''; position: absolute; inset: 7px; pointer-events: none; opacity: 0.55; transition: opacity 0.3s; --t: linear-gradient(var(--accent), var(--accent)); background: var(--t) left top / 10px 1px no-repeat, var(--t) left top / 1px 10px no-repeat, var(--t) right top / 10px 1px no-repeat, var(--t) right top / 1px 10px no-repeat, var(--t) left bottom / 10px 1px no-repeat, var(--t) left bottom / 1px 10px no-repeat, var(--t) right bottom / 10px 1px no-repeat, var(--t) right bottom / 1px 10px no-repeat; }
+  .sl-card:hover::after, .sl-card.is-hot::after { opacity: 1; }
+  .sl-card.is-hot { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-2); }
+
+  /* [01] Coverage */
+  .sl-stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+  .sl-coverage-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 28px; }
+  .sl-groups { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .sl-group { display: grid; gap: 12px; align-content: start; padding: 22px; }
+  .sl-group__top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .sl-group__name { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+  .sl-group__n { font-family: var(--font-display); font-size: 1.9rem; font-weight: 650; letter-spacing: -0.03em; line-height: 1; color: var(--fg); white-space: nowrap; }
+  .sl-group__n small { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); margin-left: 2px; }
+  .sl-group__ruler { display: block; height: 6px; border-radius: 3px; background: var(--bg-sunk); overflow: hidden; position: relative; }
+  .sl-group__ruler i { display: block; height: 100%; width: var(--w, 0%); background: var(--accent); border-radius: 3px; }
+  .sl-group__ruler::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(100% / 15 - 1px), var(--bg-elev) calc(100% / 15 - 1px) calc(100% / 15)); }
+  .sl-group__blurb { font-size: 0.9rem; color: var(--fg-2); line-height: 1.5; }
+  .sl-group__classes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sl-group__cls { font-family: var(--font-mono); font-size: 0.7rem; padding: 3px 7px; border: 1px solid var(--line); border-radius: 4px; color: var(--fg-2); line-height: 1.3; }
+  .sl-group__cls--fork { border-color: var(--hl); color: var(--hl); }
+  .sl-group__cls--more { cursor: pointer; border-style: dashed; color: var(--accent); transition: border-color 0.2s, background 0.2s; }
+  .sl-group__cls--more:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .sl-callout { display: flex; gap: 14px; align-items: flex-start; max-width: 860px; }
+  .sl-callout svg { color: var(--accent); flex: none; margin-top: 4px; }
+  .sl-callout p { color: var(--fg-2); }
+  .sl-callout b { color: var(--fg); }
+
+  /* [02] Code */
+  .sl-code-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .sl-code-grid > .sl-code--wide { grid-column: 1 / -1; }
+  .sl-code { margin: 0; background: var(--bg-elev); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: grid; align-content: start; min-width: 0; }
+  .sl-code__head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); background: color-mix(in srgb, var(--bg-sunk) 60%, transparent); }
+  .sl-code__label { color: var(--accent); }
+  .sl-code__http { text-transform: none; letter-spacing: 0.02em; }
+  .sl-code__pre { margin: 0; border: 0; border-radius: 0; background: transparent; padding: 18px 18px; font-size: 0.86rem; line-height: 1.6; }
+  .sl-code__note { padding: 12px 16px 16px; font-size: 0.88rem; color: var(--fg-2); border-top: 1px dashed var(--line); max-width: none; }
+  .sl-code__note--warn { border-top-style: solid; border-top-color: color-mix(in srgb, var(--warn) 50%, transparent); background: color-mix(in srgb, var(--warn) 9%, transparent); }
+  .sl-code__note b, .sl-code__note--warn b { color: var(--fg); }
+  .tk-k { color: var(--accent); } .tk-t { color: var(--fg); font-weight: 600; } .tk-s { color: var(--pos); } .tk-p { color: var(--hl); } .tk-c { color: var(--fg-3); font-style: italic; } .tk-f { color: var(--fg-2); } .tk-n { color: var(--pos); }
+
+  /* [03] Architecture */
+  .sl-schem-frame { position: relative; padding: clamp(28px, 3vw, 36px) clamp(14px, 2vw, 24px) clamp(14px, 2vw, 20px); border: 1px solid var(--line-strong); border-radius: 10px; background: color-mix(in srgb, var(--bg-elev) 70%, transparent); margin-bottom: clamp(20px, 3vw, 32px); }
+  .sl-schem-frame__tag { position: absolute; top: -1px; left: 24px; padding: 5px 10px; border: 1px solid var(--line-strong); border-top: 0; border-radius: 0 0 6px 6px; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); background: var(--bg); }
+  .sl-schem { width: 100%; height: auto; font-family: var(--font-mono); overflow: visible; }
+  .sl-schem--tall { display: none; }
+  .sl-schem__box { fill: color-mix(in srgb, var(--accent) 7%, transparent); stroke: var(--accent); stroke-width: 1.3; }
+  .sl-schem__node--neg .sl-schem__box { stroke: var(--neg); fill: color-mix(in srgb, var(--neg) 8%, transparent); }
+  .sl-schem__rule { stroke: color-mix(in srgb, var(--accent) 45%, transparent); stroke-width: 1; }
+  .sl-schem__node--neg .sl-schem__rule { stroke: color-mix(in srgb, var(--neg) 45%, transparent); }
+  .sl-schem__title { fill: var(--fg); letter-spacing: 0.12em; font-weight: 600; }
+  .sl-schem__line { fill: var(--fg-2); white-space: pre; }
+  .sl-schem__fork { fill: var(--hl); font-weight: 600; }
+  .sl-schem__edge { stroke: var(--accent); stroke-width: 1.4; fill: none; }
+  .sl-schem__head { fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-linejoin: round; }
+  .sl-schem__edge--neg, .sl-schem__head--neg { stroke: var(--neg); }
+  .sl-schem__loop, .sl-schem__head--loop { fill: none; stroke: var(--fg-3); stroke-width: 1.2; }
+  .sl-schem__label { fill: var(--fg-3); paint-order: stroke; stroke: var(--bg); stroke-width: 5px; stroke-linejoin: round; }
+  .sl-arch-notes .feature { padding: 22px; }
+  .sl-arch-notes .feature p { max-width: none; }
+  .sl-arch-notes code { font-size: 0.82em; }
+
+  /* [04] Explorer */
+  .sl-explorer { padding: 0; overflow: hidden; }
+  .sl-explorer__head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 22px; border-bottom: 1px solid var(--line); background: var(--bg-sunk); }
+  .sl-explorer__title { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; flex-wrap: wrap; }
+  .sl-explorer__title svg { color: var(--accent); }
+  .sl-explorer__form { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 14px; align-items: end; padding: 22px 22px 8px; }
+  .sl-explorer__form select { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--bg); color: var(--fg); transition: border-color 0.2s, box-shadow 0.2s; }
+  .sl-explorer__form select:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .sl-explorer__form .btn { height: 48px; }
+  .sl-explorer__form .btn[disabled] { opacity: 0.6; cursor: wait; }
+  .sl-explorer__status { padding: 8px 22px 16px; font-family: var(--font-mono); font-size: 0.76rem; color: var(--fg-3); min-height: 1.4em; max-width: none; }
+  .sl-explorer__status.is-error { color: var(--neg); }
+  .sl-explorer__status.is-ok { color: var(--pos); }
+  .sl-trace { list-style: none; margin: 0; padding: 0 22px 22px; display: grid; }
+  .sl-step { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 14px; padding: 18px 0; border-top: 1px dashed var(--line); }
+  .sl-step__rail { position: relative; display: flex; justify-content: center; }
+  .sl-step__rail::before { content: ''; position: absolute; top: 36px; bottom: -18px; width: 1px; background: var(--line); }
+  .sl-step:last-child .sl-step__rail::before { display: none; }
+  .sl-step__n { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line-strong); display: grid; place-items: center; font-family: var(--font-mono); font-size: 0.8rem; background: var(--bg-elev); position: relative; z-index: 1; transition: border-color 0.2s, color 0.2s, box-shadow 0.2s; }
+  .sl-step[data-status='pending'] .sl-step__n { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); animation: pulse 1.2s ease-in-out infinite; }
+  .sl-step[data-status='ok'] .sl-step__n { border-color: var(--pos); color: var(--pos); }
+  .sl-step[data-status='empty'] .sl-step__n { border-color: var(--warn); color: var(--warn); }
+  .sl-step[data-status='error'] .sl-step__n { border-color: var(--neg); color: var(--neg); }
+  .sl-step__body { min-width: 0; }
+  .sl-step__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 32px; }
+  .sl-step__title { font-weight: 600; font-size: 0.95rem; font-family: var(--font-mono); letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  .sl-step__pill { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line-strong); color: var(--fg-3); transition: color 0.2s, border-color 0.2s, background 0.2s; }
+  .sl-step[data-status='pending'] .sl-step__pill { color: var(--accent); border-color: var(--accent); }
+  .sl-step[data-status='ok'] .sl-step__pill { color: var(--pos); border-color: color-mix(in srgb, var(--pos) 60%, transparent); background: color-mix(in srgb, var(--pos) 12%, transparent); }
+  .sl-step[data-status='empty'] .sl-step__pill { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 60%, transparent); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .sl-step[data-status='error'] .sl-step__pill { color: var(--neg); border-color: color-mix(in srgb, var(--neg) 60%, transparent); background: color-mix(in srgb, var(--neg) 12%, transparent); }
+  .sl-step__ms { font-family: var(--font-mono); font-size: 0.72rem; color: var(--fg-3); }
+  .sl-step__java { margin-top: 10px; font-size: 0.84rem; padding: 12px 14px; }
+  .sl-step__http { margin-top: 8px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--fg-3); overflow-wrap: anywhere; max-width: none; }
+  .sl-step__out { margin-top: 12px; display: grid; gap: 10px; }
+  .sl-step__out:empty { display: none; }
+  .sl-res { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 10px; }
+  .sl-res__card { background: var(--bg-sunk); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 8px; align-content: start; transition: border-color 0.2s, transform 0.25s var(--ease-out); min-width: 0; }
+  .sl-res__card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .sl-res__name { font-weight: 600; font-size: 0.95rem; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  .sl-res__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sl-res__id { font-family: var(--font-mono); font-size: 0.7rem; color: var(--fg-3); overflow-wrap: anywhere; }
+  .sl-res__id b { color: var(--fg-2); font-weight: 500; }
+  .sl-user { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: center; background: var(--bg-sunk); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  .sl-user__mark { width: 56px; height: 56px; border-radius: 10px; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; letter-spacing: -0.02em; }
+  .sl-user__name { font-weight: 650; font-size: 1.05rem; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  .sl-user__handle { font-family: var(--font-mono); font-size: 0.78rem; color: var(--fg-2); overflow-wrap: anywhere; }
+  .sl-msg { padding: 12px 14px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--neg) 45%, transparent); background: color-mix(in srgb, var(--neg) 10%, transparent); font-size: 0.9rem; color: var(--fg); max-width: none; }
+  .sl-msg--warn { border-color: color-mix(in srgb, var(--warn) 45%, transparent); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+  .sl-msg--muted { border-color: var(--line); background: transparent; color: var(--fg-2); }
+
+  /* [05] Where it led */
+  .sl-rev { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: 16px; align-items: start; }
+  .sl-rev__block { padding: 0; overflow: hidden; }
+  .sl-rev__head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 20px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); background: var(--bg-sunk); }
+  .sl-rev__wrap { border: 0; border-radius: 0; background: transparent; }
+  .sl-rev__table th:first-child, .sl-rev__table td:first-child { width: 56px; }
+  .sl-rev__table td:nth-child(2) { white-space: nowrap; color: var(--fg-2); font-family: var(--font-mono); font-size: 0.82rem; }
+  .sl-rev__table td:nth-child(3) { min-width: 240px; color: var(--fg-2); }
+  .sl-rev__fork td { background: color-mix(in srgb, var(--hl) 8%, transparent); }
+  .sl-rev__fork td:first-child { color: var(--hl); font-weight: 600; }
+  .sl-rev__side { display: grid; gap: 16px; }
+  .sl-fork { display: grid; gap: 12px; padding: 22px; }
+  .sl-fork__path { font-family: var(--font-mono); font-size: 0.7rem; color: var(--fg-3); overflow-wrap: anywhere; }
+  .sl-fork__code { display: block; font-size: 1.1rem; padding: 12px 14px; border-radius: 6px; background: var(--bg-sunk); border-left: 3px solid var(--hl); }
+  .sl-fork p { font-size: 0.92rem; color: var(--fg-2); }
+  .sl-next { display: grid; gap: 12px; padding: 22px; }
+  .sl-next__eyebrow { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
+  .sl-next__line { font-weight: 600; font-size: 1.02rem; letter-spacing: -0.01em; }
+  .sl-next__kv { font-size: 0.88rem; }
+  .sl-next .btn { justify-self: start; margin-top: 4px; }
+
+  /* More from the portfolio */
+  .sl-more__title { font-size: clamp(1.4rem, 1.2rem + 0.8vw, 1.9rem); }
+  .sl-more { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .sl-more__card { display: grid; gap: 8px; align-content: start; padding: 18px 20px 20px; border-top: 3px solid var(--swatch); color: var(--fg); }
+  .sl-more__tab { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); }
+  .sl-more__name { font-family: var(--font-display); font-weight: 650; font-size: 1.05rem; letter-spacing: -0.01em; }
+  .sl-more__line { font-size: 0.88rem; color: var(--fg-2); }
+  .sl-more__go { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 600; color: var(--accent); margin-top: 4px; }
+  .sl-more__card .arrow { transition: transform 0.25s var(--ease-out); }
+  .sl-more__card:hover .arrow { transform: translateX(3px); }
+
+  /* Dialog contents */
+  .sl-ep td { font-size: 0.86rem; vertical-align: top; }
+  .sl-ep code { font-size: 0.78rem; white-space: nowrap; }
+  .sl-ep__group { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .sl-ep__http { color: var(--fg-2); }
+  .sl-ep__note { display: block; font-size: 0.76rem; color: var(--fg-3); margin-top: 4px; }
+  .sl-index { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; margin-top: 18px; }
+  .sl-index__name { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .sl-index__list { display: grid; gap: 4px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--fg-2); }
+  .sl-index__list li { overflow-wrap: anywhere; }
+  .sl-index__list li.is-fork { color: var(--hl); }
+  .sl-index__flag { display: inline-block; margin-left: 8px; padding: 1px 6px; border: 1px solid var(--hl); border-radius: 4px; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sl .dlg__body h3 { font-size: 1.05rem; margin-top: 1.4em; }
+
+  /* Responsive */
+  @media (max-width: 1040px) {
+    .sl-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sl-more { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 960px) {
+    .sl-hero__grid { grid-template-columns: 1fr; }
+    .sl-hero h1 { max-width: none; }
+    .sl-rev { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 760px) {
+    .sl-code-grid { grid-template-columns: 1fr; }
+    .sl-schem--wide { display: none; }
+    .sl-schem--tall { display: block; max-width: 420px; margin-inline: auto; }
+  }
+  @media (max-width: 640px) {
+    .sl-tb { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sl-explorer__form { grid-template-columns: 1fr; }
+    .sl-explorer__head, .sl-explorer__form, .sl-explorer__status, .sl-trace { padding-inline: 16px; }
+    .sl-section::before { top: 18px; font-size: 2.6rem; }
+    .sl-dim { white-space: normal; }
+    .sl-index { grid-template-columns: 1fr; }
+    .sl-mark { display: none; }
+  }
+  @media (max-width: 560px) {
+    .sl-groups { grid-template-columns: 1fr; }
+    .sl-more { grid-template-columns: 1fr; }
+    .sl-step { grid-template-columns: 28px minmax(0, 1fr); gap: 10px; }
+    .sl-step__n { width: 28px; height: 28px; font-size: 0.72rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .draw .sl-tm text, .draw .sl-schem text { opacity: 1; }
+    .sl-step[data-status='pending'] .sl-step__n { animation: none; }
+  }
+</style>

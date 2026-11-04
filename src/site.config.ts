@@ -10,22 +10,22 @@ export const site = {
   tagline: 'I build models for games and markets, then ship them as products people can actually use.',
   description:
     'Portfolio of Sid Subramanian: an NBA player-prop model with a self-grading pipeline, a Kalshi MLB market study with a Rust trading pipeline, an NFL game-totals model, a live fantasy-football draft copilot, and a Java client for the Sleeper API.',
-  location: '',
+  location: '' as string,
 
   // Contact. The email is shown in the contact dialog and used by the mailto fallback.
   email: 'sidharth.s.1041@gmail.com',
   github: 'https://github.com/SidSub1041',
   githubHandle: 'SidSub1041',
   tableau: 'https://public.tableau.com/app/profile/sidharth.subramanian7031',
-  linkedin: '', // e.g. 'https://www.linkedin.com/in/your-handle' (leave empty to hide)
+  linkedin: '' as string, // e.g. 'https://www.linkedin.com/in/your-handle' (leave empty to hide)
 
   // Optional: a form endpoint (Formspree, Basin, Netlify Forms, your own API). When set, the
   // contact form POSTs JSON there; when empty, the form opens the visitor's mail app instead.
-  contactEndpoint: '',
+  contactEndpoint: '' as string,
 
   // Drop your headshot at public/images/headshot.jpg (square, at least 800x800) and set this to
   // '/images/headshot.jpg'. While it is empty the home page shows a styled placeholder.
-  headshot: '',
+  headshot: '' as string,
   headshotAlt: 'Portrait of Sid Subramanian',
 
   // Paragraphs for the "About" section of the home page.

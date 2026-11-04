@@ -243,6 +243,10 @@ pre code { background: none; padding: 0; }
   body { font-size: 1rem; }
 }
 
+/* Grid and flex items may shrink below their content's intrinsic width (charts, code, long URLs scroll inside instead of widening the page). */
+.grid > *, .split > *, .stat-row > *, .card, .chart-card, .panel, .table-wrap, .feature, .step-list, .step > *, .stack, .section-head, figure, .cluster > * { min-width: 0; }
+.table-wrap, pre { max-width: 100%; }
+
 /* ---- Surfaces --------------------------------------------------------- */
 .card { background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: clamp(20px, 2.6vw, 30px); box-shadow: var(--shadow-1); position: relative; }
 .card--sunk { background: var(--bg-sunk); box-shadow: none; }

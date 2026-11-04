@@ -1,0 +1,95 @@
+---
+/**
+ * The last graded board: one row per pick, with client-side filter chips
+ * (wired in src/scripts/nba-board.ts). Every value comes from nba.json.lastBoard.
+ */
+import Icon from '../Icon.astro';
+import Grade from './Grade.astro';
+import { fmtUnits, statLabel } from '../../lib/format';
+
+interface Row {
+  player: string; team: string; opp: string; pos: string | null; stat: string; side: string; line: number; price: string;
+  book: string | null; actual: number; result: string; grade: string; units: number; pHit: number | null; projMu: number | null;
+  closingLine: number | null; clvLine: number | null; hitrate: number | null; seasonAvg: number | null;
+}
+interface Props { rows: Row[]; date: string }
+const { rows, date } = Astro.props;
+const hits = rows.filter((r) => r.result === 'hit').length;
+const misses = rows.filter((r) => r.result === 'miss').length;
+const overs = rows.filter((r) => r.side === 'over').length;
+const unders = rows.filter((r) => r.side === 'under').length;
+const fmtLine = (v: number | null) => (v == null ? '—' : v.toFixed(1));
+---
+<div class="nba-board" id="nba-board" data-date={date}>
+  <div class="nba-board__tools">
+    <div class="nba-board__filters" role="group" aria-label="Filter the board">
+      <button class="chip chip--btn is-on" type="button" data-filter="all" aria-pressed="true">All <span class="num">{rows.length}</span></button>
+      <button class="chip chip--btn" type="button" data-filter="hit" aria-pressed="false"><Icon name="check" size={13} /> Hits <span class="num">{hits}</span></button>
+      <button class="chip chip--btn" type="button" data-filter="miss" aria-pressed="false"><Icon name="close" size={13} /> Misses <span class="num">{misses}</span></button>
+      <button class="chip chip--btn" type="button" data-filter="over" aria-pressed="false">Over <span class="num">{overs}</span></button>
+      <button class="chip chip--btn" type="button" data-filter="under" aria-pressed="false">Under <span class="num">{unders}</span></button>
+    </div>
+    <p class="small muted nba-board__count" aria-live="polite" data-board-count>Showing all {rows.length} picks</p>
+  </div>
+  <div class="table-wrap nba-board__wrap">
+    <table class="table nba-board__table">
+      <thead>
+        <tr>
+          <th>Player</th><th>Opp</th><th>Stat</th><th>Side</th><th class="num">Line</th><th>Price</th><th class="num">Model</th><th class="num">Actual</th><th>Result</th><th>Grade</th><th class="num">CLV</th><th class="num">Units</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr data-result={r.result} data-side={r.side} data-units={r.units}>
+            <td>
+              <span class="nba-board__player">{r.player}</span>
+              <span class="nba-board__meta mono">{r.team}{r.pos ? ` · ${r.pos}` : ''}</span>
+            </td>
+            <td class="mono small">{r.opp}</td>
+            <td><span class="nba-board__stat">{statLabel(r.stat)}</span></td>
+            <td><span class:list={['nba-side', `nba-side--${r.side}`]}>{r.side}</span></td>
+            <td class="num">{fmtLine(r.line)}</td>
+            <td class="nba-board__price"><span class="mono">{r.price}</span>{r.book && <span class="nba-board__meta">{r.book}</span>}</td>
+            <td class="num" title={r.projMu != null ? `Projection ${r.projMu.toFixed(1)}` : undefined}>{r.pHit != null ? `${Math.round(r.pHit * 100)}%` : '—'}</td>
+            <td class="num"><b>{r.actual}</b></td>
+            <td><span class:list={['nba-result', `nba-result--${r.result}`]}><Icon name={r.result === 'hit' ? 'check' : 'close'} size={12} />{r.result}</span></td>
+            <td><Grade grade={r.grade} size="sm" /></td>
+            <td class="num" title={r.closingLine != null ? `Closed at ${fmtLine(r.closingLine)}` : 'Close unverified: the market was not re-priced within 90 minutes of tip'}>
+              {r.clvLine == null ? <span class="muted">n/v</span> : <span class:list={[r.clvLine > 0 ? 'text-pos' : r.clvLine < 0 ? 'text-neg' : '']}>{r.clvLine > 0 ? '+' : ''}{r.clvLine.toFixed(1)}</span>}
+            </td>
+            <td class:list={['num', 'nba-board__units', r.units > 0 ? 'text-pos' : r.units < 0 ? 'text-neg' : '']}>{fmtUnits(r.units)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted nba-board__foot">Model = the blended probability of the pick at pick time. CLV = closing line minus the line taken, in the pick's favour; n/v = the close could not be verified. Prices are the best available at the book shown.</p>
+</div>
+
+<style>
+  .nba-board__tools { display: flex; justify-content: space-between; align-items: center; gap: 12px 20px; flex-wrap: wrap; margin-bottom: 14px; }
+  .nba-board__filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nba-board__filters .chip { font-family: var(--font-body); font-weight: 600; font-size: 0.84rem; padding: 8px 12px; border-color: var(--line); }
+  .nba-board__filters .chip .num { font-family: var(--font-mono); font-weight: 500; color: var(--fg-3); }
+  .nba-board__filters .chip.is-on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .nba-board__filters .chip.is-on .num { color: color-mix(in srgb, var(--bg) 70%, var(--fg)); }
+  .nba-board__count { margin: 0; }
+  .nba-board__table { font-size: 0.9rem; min-width: 980px; }
+  .nba-board__table th { white-space: nowrap; }
+  .nba-board__table td { vertical-align: middle; }
+  .nba-board__table tbody tr { transition: background 0.2s; }
+  .nba-board__table tbody tr[hidden] { display: none; }
+  .nba-board__player { display: block; font-weight: 600; white-space: nowrap; }
+  .nba-board__meta { display: block; font-size: 0.72rem; color: var(--fg-3); letter-spacing: 0.04em; white-space: nowrap; }
+  .nba-board__stat { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: 0.06em; }
+  .nba-board__price { white-space: nowrap; }
+  .nba-board__units { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.04em; }
+  .nba-board__foot { margin-top: 12px; max-width: none; }
+  .nba-side { display: inline-block; font-family: var(--font-display); font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px 2px; border-radius: 4px; line-height: 1; }
+  .nba-side--over { color: var(--pos); background: color-mix(in srgb, var(--pos) 14%, transparent); }
+  .nba-side--under { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .nba-result { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .nba-result--hit { color: var(--pos); }
+  .nba-result--miss { color: var(--neg); }
+  .nba-result :global(svg) { width: 12px; height: 12px; }
+</style>

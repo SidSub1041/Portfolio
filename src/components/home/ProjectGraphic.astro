@@ -1,0 +1,222 @@
+---
+/**
+ * Home page only. One small, build-time SVG per project, drawn from the JSON snapshots in
+ * src/data so the card graphics are real data, not decoration:
+ *   nba     cumulative units by graded day, 2026-27 season
+ *   kalshi  the MIN @ HOU moneyline price path with scoring plays marked
+ *   nfl     model total vs Vegas total for the four Divisional Round games
+ *   draft   ADP consumption curves (positional rank -> overall pick) for RB and WR
+ *   sleeper a schematic of the client's endpoint groups
+ * Colours come from the card's --swatch token (see ProjectCard.astro), never hardcoded.
+ */
+import type { ThemeId } from '../../data/projects';
+import nba from '../../data/nba.json';
+import kalshi from '../../data/kalshi.json';
+import nfl from '../../data/nfl.json';
+import draft from '../../data/draft.json';
+import sleeper from '../../data/sleeper.json';
+import { fmtUnits, fmtSigned, fmtShortDate, fmtInt } from '../../lib/format';
+
+interface Props { id: ThemeId }
+const { id } = Astro.props;
+
+const W = 320;
+const H = 136;
+const r = (v: number): string => (Math.round(v * 100) / 100).toString();
+const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const lin = (d0: number, d1: number, r0: number, r1: number) => (v: number): number => r0 + ((v - d0) / ((d1 - d0) || 1)) * (r1 - r0);
+const path = (pts: { x: number; y: number }[]): string => pts.map((p, i) => `${i ? 'L' : 'M'}${r(p.x)} ${r(p.y)}`).join(' ');
+const open = (label: string): string => `<svg class="hg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}" preserveAspectRatio="xMidYMid meet">`;
+const text = (cls: string, x: number, y: number, s: string, anchor = 'start'): string => `<text class="${cls}" x="${r(x)}" y="${r(y)}" text-anchor="${anchor}">${esc(s)}</text>`;
+const line = (cls: string, x1: number, y1: number, x2: number, y2: number): string => `<line class="${cls}" x1="${r(x1)}" y1="${r(y1)}" x2="${r(x2)}" y2="${r(y2)}" pathLength="1"/>`;
+
+interface Graphic { svg: string; caption: string; legend?: { cls: string; label: string }[]; draw: boolean }
+
+function nbaGraphic(): Graphic {
+  const season = nba.currentSeason as keyof typeof nba.cumulative;
+  const rows = nba.cumulative[season];
+  const pad = { t: 16, r: 66, b: 22, l: 10 };
+  const ys = rows.map((d) => d.cum);
+  const y0 = Math.min(0, ...ys), y1 = Math.max(0, ...ys);
+  const sx = lin(0, rows.length - 1, pad.l, W - pad.r);
+  const sy = lin(y0, y1, H - pad.b, pad.t);
+  const pts = rows.map((d, i) => ({ x: sx(i), y: sy(d.cum) }));
+  const first = rows[0], last = rows[rows.length - 1];
+  const end = pts[pts.length - 1];
+  const stats = nba.seasons[season];
+  let s = open(`Cumulative units by graded day in the ${season} season: ${fmtUnits(last.cum)} after ${rows.length} graded days, from ${fmtShortDate(first.date)} to ${fmtShortDate(last.date)}`);
+  s += line('hg-zero', pad.l, sy(0), W - pad.r, sy(0));
+  s += text('hg-lbl', pad.l, sy(0) - 5, '0u');
+  s += `<path class="hg-area" d="${path(pts)} L${r(end.x)} ${r(sy(0))} L${r(pts[0].x)} ${r(sy(0))} Z"/>`;
+  s += `<path class="hg-line" d="${path(pts)}" pathLength="1"/>`;
+  s += `<circle class="hg-dot" cx="${r(end.x)}" cy="${r(end.y)}" r="3.5"/>`;
+  s += text('hg-val', end.x + 9, end.y + 4, fmtUnits(last.cum));
+  s += text('hg-lbl', pad.l, H - 6, fmtShortDate(first.date));
+  s += text('hg-lbl', W - pad.r, H - 6, fmtShortDate(last.date), 'end');
+  s += '</svg>';
+  return { svg: s, draw: true, caption: `Cumulative units, ${season}: ${stats.hits}-${stats.misses} on ${fmtInt(stats.picks)} picks over ${stats.gradedDays} graded days, published nightly` };
+}
+
+function kalshiGraphic(): Graphic {
+  const g = kalshi.gamePath;
+  const pad = { t: 18, r: 40, b: 22, l: 10 };
+  const ms = g.series.map((d) => d.m);
+  const m0 = Math.min(...ms), m1 = Math.max(...ms);
+  const sx = lin(m0, m1, pad.l, W - pad.r);
+  const sy = lin(0, 100, H - pad.b, pad.t);
+  const pts = g.series.map((d) => ({ x: sx(d.m), y: sy(d.p) }));
+  const first = g.series[0], last = g.series[g.series.length - 1];
+  const end = pts[pts.length - 1];
+  let s = open(`${g.label}: the ${g.side} moneyline price moved from ${first.p} to ${last.p} cents over ${Math.round(m1)} minutes; ${g.scoringPlays.length} scoring plays are marked`);
+  s += line('hg-zero', pad.l, sy(50), W - pad.r, sy(50));
+  s += text('hg-lbl', pad.l, sy(50) - 5, '50¢');
+  for (const sp of g.scoringPlays) s += line('hg-tick', sx(sp.m), pad.t, sx(sp.m), H - pad.b);
+  const hr = g.scoringPlays.find((sp) => sp.event === 'Home Run');
+  if (hr) s += text('hg-lbl', sx(hr.m) + 4, pad.t + 8, `HR, ${hr.score}`);
+  s += `<path class="hg-area" d="${path(pts)} L${r(end.x)} ${r(sy(0))} L${r(pts[0].x)} ${r(sy(0))} Z"/>`;
+  s += `<path class="hg-line" d="${path(pts)}" pathLength="1"/>`;
+  s += `<circle class="hg-dot" cx="${r(end.x)}" cy="${r(end.y)}" r="3.5"/>`;
+  s += text('hg-val', end.x + 8, end.y + 4, `${last.p}¢`);
+  s += text('hg-lbl', pad.l, H - 6, 'first pitch');
+  s += text('hg-lbl', W - pad.r, H - 6, `${Math.round(m1)} min`, 'end');
+  s += '</svg>';
+  return { svg: s, draw: true, caption: `${g.label}: ${g.side} to win, 1-minute candles. Dashed lines are the ${g.scoringPlays.length} scoring plays` };
+}
+
+function nflGraphic(): Graphic {
+  const games = nfl.games;
+  const pad = { t: 8, r: 44, b: 22, l: 78 };
+  const vals = games.flatMap((g) => [g.vegasTotal, g.modelTotal]);
+  const v0 = Math.floor(Math.min(...vals) / 5) * 5, v1 = Math.ceil(Math.max(...vals) / 5) * 5;
+  const sx = lin(v0, v1, pad.l, W - pad.r);
+  const rowH = (H - pad.t - pad.b) / games.length;
+  let s = open(`Model total versus Vegas total for ${games.length} Divisional Round games: ` + games.map((g) => `${g.awayAbbr} at ${g.homeAbbr} Vegas ${g.vegasTotal}, model ${g.modelTotal.toFixed(1)}, edge ${fmtSigned(g.edge, 1)}`).join('; '));
+  for (let t = v0; t <= v1; t += 5) {
+    s += line('hg-grid', sx(t), pad.t, sx(t), H - pad.b);
+    s += text('hg-lbl', sx(t), H - 6, String(t), 'middle');
+  }
+  games.forEach((g, i) => {
+    const y = pad.t + rowH * (i + 0.5);
+    const xv = sx(g.vegasTotal), xm = sx(g.modelTotal);
+    s += text('hg-cat', pad.l - 10, y + 3.5, `${g.awayAbbr} @ ${g.homeAbbr}`, 'end');
+    s += line('hg-link', xv, y, xm, y);
+    s += `<circle class="hg-vegas" cx="${r(xv)}" cy="${r(y)}" r="4"/>`;
+    s += `<circle class="hg-model" cx="${r(xm)}" cy="${r(y)}" r="4"/>`;
+    s += text(`hg-val ${g.edge >= 0 ? 'is-pos' : 'is-neg'}`, Math.max(xv, xm) + 9, y + 3.5, fmtSigned(g.edge, 1));
+  });
+  s += '</svg>';
+  return {
+    svg: s, draw: false,
+    caption: `${nfl.playoffWeekend.replace(' - ', ', ')}: ${nfl.summaryStats.overPicks} over, ${nfl.summaryStats.underPicks} under, ${nfl.summaryStats.holdPicks} hold`,
+    legend: [{ cls: 'hg-legend--vegas', label: 'Vegas total' }, { cls: 'hg-legend--model', label: 'Model total' }],
+  };
+}
+
+function draftGraphic(): Graphic {
+  const pad = { t: 10, r: 40, b: 22, l: 34 };
+  const series: { key: 'RB' | 'WR'; cls: string; pts: number[][] }[] = [
+    { key: 'RB', cls: 'hg-line', pts: draft.anchors.RB },
+    { key: 'WR', cls: 'hg-line hg-line--alt', pts: draft.anchors.WR },
+  ];
+  const xMax = 60, yMax = 170;
+  const sx = lin(1, xMax, pad.l, W - pad.r);
+  const sy = lin(1, yMax, pad.t, H - pad.b);
+  let s = open(`ADP consumption curves for a 12-team league: overall pick at which each running-back and wide-receiver positional rank is usually gone. RB anchors: ${draft.anchors.RB.map(([a, b]) => `RB${a} by pick ${b}`).join(', ')}. WR anchors: ${draft.anchors.WR.map(([a, b]) => `WR${a} by pick ${b}`).join(', ')}`);
+  for (const t of [1, 60, 120, 170]) {
+    s += line('hg-grid', pad.l, sy(t), W - pad.r, sy(t));
+    s += text('hg-lbl', pad.l - 6, sy(t) + 3.5, String(t), 'end');
+  }
+  for (const t of [1, 30, 60]) s += text('hg-lbl', sx(t), H - 6, t === 1 ? 'rank 1' : String(t), t === 1 ? 'start' : 'middle');
+  for (const ser of series) {
+    const pts = ser.pts.map(([rank, pick]) => ({ x: sx(rank), y: sy(pick) }));
+    s += `<path class="${ser.cls}" d="${path(pts)}" pathLength="1"/>`;
+    const end = pts[pts.length - 1];
+    s += text('hg-val', end.x + 8, end.y + 4, ser.key);
+  }
+  const hi = draft.anchors.RB.find(([rank]) => rank === 18);
+  if (hi) {
+    const [rank, pick] = hi;
+    s += line('hg-tick', sx(rank), sy(pick), sx(rank), H - pad.b);
+    s += line('hg-tick', pad.l, sy(pick), sx(rank), sy(pick));
+    s += `<circle class="hg-dot" cx="${r(sx(rank))}" cy="${r(sy(pick))}" r="3.5"/>`;
+    s += text('hg-val', sx(rank) + 8, sy(pick) - 6, `RB${rank}: gone by pick ${pick}`);
+  }
+  s += '</svg>';
+  return { svg: s, draw: true, caption: 'ADP consumption curves, 12-team league: positional rank (across) against the overall pick it is usually gone by (down), from Sleeper search rank' };
+}
+
+function sleeperGraphic(): Graphic {
+  const order = ['Draft', 'League', 'Player', 'Stats', 'User', 'Other'] as const;
+  const groups = order.map((k) => ({ key: k, n: sleeper.groups[k].length }));
+  const box = (x: number, y: number, w: number, h: number, cls: string): string =>
+    `<path class="${cls}" d="M${r(x + 6)} ${r(y)} h${r(w - 12)} a6 6 0 0 1 6 6 v${r(h - 12)} a6 6 0 0 1 -6 6 h-${r(w - 12)} a6 6 0 0 1 -6 -6 v-${r(h - 12)} a6 6 0 0 1 6 -6 z" pathLength="1"/>`;
+  let s = open(`Schematic of the Java client: the Sleeper REST API feeds the SleeperApi entry point, which fans out to ${groups.map((g) => `${g.key} (${g.n} classes)`).join(', ')}, returning plain Java objects`);
+  const midY = H / 2;
+  s += box(6, midY - 22, 90, 44, 'hg-box');
+  s += text('hg-cat', 51, midY - 3, 'Sleeper REST', 'middle');
+  s += text('hg-lbl', 51, midY + 11, 'api.sleeper.app', 'middle');
+  s += `<path class="hg-wire" d="M96 ${r(midY)} H118" pathLength="1"/>`;
+  s += `<path class="hg-wire" d="M113 ${r(midY - 4)} l5 4 -5 4" pathLength="1"/>`;
+  s += box(120, midY - 22, 84, 44, 'hg-box hg-box--accent');
+  s += text('hg-cat', 162, midY - 3, 'SleeperApi', 'middle');
+  s += text('hg-lbl', 162, midY + 11, 'Java, Gradle', 'middle');
+  const rowH = (H - 12) / groups.length;
+  groups.forEach((g, i) => {
+    const y = 6 + rowH * (i + 0.5);
+    s += `<path class="hg-wire" d="M204 ${r(midY)} H222 V${r(y)} H236" pathLength="1"/>`;
+    s += `<circle class="hg-dot" cx="238" cy="${r(y)}" r="2.5"/>`;
+    s += text('hg-cat', 246, y + 3.5, g.key);
+    s += text('hg-val', W - 4, y + 3.5, String(g.n), 'end');
+  });
+  s += '</svg>';
+  return { svg: s, draw: true, caption: `${sleeper.files} Java files in ${groups.length} endpoint groups (class counts at right), ${fmtInt(sleeper.javaLines)} lines, ${sleeper.tests.length} JUnit test classes` };
+}
+
+const graphics: Record<ThemeId, () => Graphic> = { nba: nbaGraphic, kalshi: kalshiGraphic, nfl: nflGraphic, draft: draftGraphic, sleeper: sleeperGraphic };
+const g = graphics[id]();
+---
+<figure class="hgfig">
+  <div class:list={['hgfig__plot', { draw: g.draw }]} set:html={g.svg} />
+  <figcaption class="hgfig__cap">
+    <span>{g.caption}</span>
+    {g.legend && (
+      <span class="hgfig__legend">
+        {g.legend.map((l) => <span class:list={['hgfig__key', l.cls]}>{l.label}</span>)}
+      </span>
+    )}
+  </figcaption>
+</figure>
+
+<style is:global>
+  /* Global because the SVG arrives through set:html. Everything is prefixed .hg / .hgfig. */
+  .hgfig { margin: 0; display: grid; gap: 10px; }
+  .hgfig__plot { background: var(--bg-sunk); border-radius: 10px; padding: 12px 12px 8px; }
+  .hgfig__cap { font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.45; color: var(--fg-3); display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: space-between; }
+  .hgfig__legend { display: inline-flex; gap: 12px; white-space: nowrap; }
+  .hgfig__key { display: inline-flex; align-items: center; gap: 6px; }
+  .hgfig__key::before { content: ''; width: 9px; height: 9px; border-radius: 50%; box-sizing: border-box; }
+  .hg-legend--vegas::before { border: 2px solid var(--swatch-ink); background: var(--bg-elev); }
+  .hg-legend--model::before { background: var(--fg); }
+  .hg { width: 100%; height: auto; display: block; font-family: var(--font-mono); overflow: visible; }
+  .hg text { font-size: 10.5px; fill: var(--fg-3); font-variant-numeric: tabular-nums; }
+  .hg .hg-cat { fill: var(--fg-2); }
+  .hg .hg-val { fill: var(--fg); font-weight: 600; }
+  .hg .hg-val.is-pos { fill: var(--pos); }
+  .hg .hg-val.is-neg { fill: var(--neg); }
+  .hg .hg-zero { stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 2 4; }
+  .hg .hg-grid { stroke: var(--line); stroke-width: 1; }
+  .hg .hg-tick { stroke: color-mix(in srgb, var(--swatch-ink) 55%, transparent); stroke-width: 1; stroke-dasharray: 2 3; }
+  .hg .hg-line { fill: none; stroke: var(--swatch-ink); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+  .hg .hg-line--alt { stroke: var(--fg-3); stroke-width: 1.75; stroke-dasharray: 5 4; }
+  .hg .hg-area { fill: var(--swatch-ink); opacity: 0.12; }
+  .hg .hg-dot { fill: var(--swatch-ink); stroke: var(--bg-sunk); stroke-width: 2; }
+  .hg .hg-vegas { fill: var(--bg-sunk); stroke: var(--swatch-ink); stroke-width: 2; }
+  .hg .hg-model { fill: var(--fg); }
+  .hg .hg-link { stroke: var(--line-strong); stroke-width: 2; stroke-linecap: round; }
+  .hg .hg-box { fill: var(--bg-elev); stroke: var(--line-strong); stroke-width: 1; }
+  .hg .hg-box--accent { stroke: var(--swatch-ink); stroke-width: 1.5; }
+  .hg .hg-wire { fill: none; stroke: var(--swatch-ink); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  /* .draw animates strokes on entry (global.css); the dashed guides keep their own dash pattern once drawn. */
+  .draw.is-in .hg .hg-zero, .draw.is-in .hg .hg-tick, .draw.is-in .hg .hg-line--alt { animation-name: hg-draw-dashed; }
+  @keyframes hg-draw-dashed { to { stroke-dashoffset: 0; } }
+</style>
