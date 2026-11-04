@@ -1,5 +1,9 @@
 # Sid Subramanian — portfolio site
 
+> This repository is the site itself (standalone layout). Where the deployment notes below
+> mention a `portfolio` root directory or `portfolio/` prefixes, ignore them: use the repository
+> root. The GitHub Pages workflow for this layout is already in `.github/workflows/deploy-pages.yml`.
+
 A static site that gathers five projects under one roof: a home page with an overview, skills
 and contact pop-up, and one tab per project, each keeping its own design.
 
@@ -99,19 +103,10 @@ The build is a folder of static files (`dist/`), so any static host works. Pick 
 Connect the repo, set the root directory to `portfolio`, build command `npm run build`, output
 `dist`, then add the custom domain under the project's Custom domains tab.
 
-### Moving the site into its own repository
+### History
 
-The portfolio lives in `portfolio/` of the Kalshi repository only because that is where this
-session could push. To give it a repository of its own (recommended):
-
-```bash
-git subtree split --prefix=portfolio -b portfolio-only
-git push git@github.com:SidSub1041/portfolio.git portfolio-only:main
-```
-
-Then move `.github/workflows/portfolio-pages.yml` into the new repository and drop the
-`portfolio/` prefixes in it (`working-directory`, `cache-dependency-path`, `paths`, artifact
-`path`).
+This repository was split out of the `portfolio/` folder of the Kalshi repository branch where
+the site was first built, so the commit history starts there.
 
 ## Structure
 
