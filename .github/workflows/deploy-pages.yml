@@ -3,10 +3,11 @@
 # One-time setup in the repository settings:
 #   (Pages is enabled automatically by the configure-pages step below; if that step is refused,
 #    set Settings → Pages → Build and deployment → Source: "GitHub Actions" once by hand.)
-#   Settings → Secrets and variables → Actions → Variables:
-#     SITE_URL   = https://your-domain.com          (the purchased domain; used for canonical/OG URLs)
-#     BASE_PATH  = /                                 (only change when serving from a sub-path without a custom domain)
-#   Settings → Pages → Custom domain: your-domain.com (and add public/CNAME with the same name)
+#   Nothing else: the site URL and base path are taken from the Pages configuration
+#   (configure-pages below), so https://user.github.io/repo/, a user site and a custom domain all
+#   work without variables. Settings → Pages → Custom domain: your-domain.com (and add public/CNAME
+#   with the same name) when the domain is ready. Optional overrides: repository variables
+#   SITE_URL and BASE_PATH.
 name: Deploy portfolio to GitHub Pages
 
 on:
@@ -28,8 +29,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Enables GitHub Pages for the repository on the first run, so no manual setup is needed.
-      - uses: actions/configure-pages@v5
+      # Enables GitHub Pages on the first run and reports where the site is served from:
+      # the repository sub-path (https://user.github.io/repo/), the root of a user site, or a
+      # custom domain once one is set in Settings -> Pages. The build uses that automatically.
+      - id: pages
+        uses: actions/configure-pages@v5
         with:
           enablement: true
       - uses: actions/setup-node@v4
@@ -40,8 +44,9 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          SITE_URL: ${{ vars.SITE_URL || format('https://{0}.github.io', github.repository_owner) }}
-          BASE_PATH: ${{ vars.BASE_PATH || '/' }}
+          # Repository variables, when set, override what configure-pages reports.
+          SITE_URL: ${{ vars.SITE_URL || steps.pages.outputs.origin }}
+          BASE_PATH: ${{ vars.BASE_PATH || format('{0}/', steps.pages.outputs.base_path) }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
