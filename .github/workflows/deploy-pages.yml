@@ -1,7 +1,8 @@
 # Builds the portfolio site (this repository) and publishes it to GitHub Pages.
 #
 # One-time setup in the repository settings:
-#   Settings → Pages → Build and deployment → Source: "GitHub Actions"
+#   (Pages is enabled automatically by the configure-pages step below; if that step is refused,
+#    set Settings → Pages → Build and deployment → Source: "GitHub Actions" once by hand.)
 #   Settings → Secrets and variables → Actions → Variables:
 #     SITE_URL   = https://your-domain.com          (the purchased domain; used for canonical/OG URLs)
 #     BASE_PATH  = /                                 (only change when serving from a sub-path without a custom domain)
@@ -27,6 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Enables GitHub Pages for the repository on the first run, so no manual setup is needed.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
