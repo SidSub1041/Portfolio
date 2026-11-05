@@ -33,7 +33,7 @@ export const site = {
 
   // Drop your headshot at public/images/headshot.jpg (square, at least 800x800) and set this to
   // '/images/headshot.jpg'. While it is empty the home page shows a plain placeholder.
-  headshot: '' as string,
+  headshot: '/images/headshot.jpg' as string,
   headshotAlt: 'Portrait of Sid Subramanian',
 
   // "01 / Profile" on the home page. Short sentences, your own voice.
