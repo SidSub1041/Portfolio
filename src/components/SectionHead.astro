@@ -1,10 +1,21 @@
 ---
-interface Props { eyebrow?: string; title: string; lead?: string; id?: string; class?: string }
-const { eyebrow, title, lead, id, class: cls = '' } = Astro.props;
+/**
+ * Section heading in the template's style: a rust monospace label such as "01 / PROFILE",
+ * a bold title, an optional short lead, and a thin rule underneath.
+ */
+interface Props { eyebrow?: string; num?: string; title: string; lead?: string; id?: string; class?: string; rule?: boolean }
+const { eyebrow, num, title, lead, id, class: cls = '', rule = true } = Astro.props;
 ---
 <div class:list={['section-head', cls]} id={id}>
-  {eyebrow && <span class="eyebrow reveal">{eyebrow}</span>}
+  {(eyebrow || num) && (
+    <span class="eyebrow reveal">
+      {num && <span class="eyebrow__num">{num}</span>}
+      {num && eyebrow && <span class="eyebrow__slash">/</span>}
+      {eyebrow && <span>{eyebrow}</span>}
+    </span>
+  )}
   <h2 class="reveal" style="--i:1">{title}</h2>
   {lead && <p class="lead reveal" style="--i:2">{lead}</p>}
   <slot />
+  {rule && <hr class="rule reveal" style="--i:3;margin-top:28px" />}
 </div>

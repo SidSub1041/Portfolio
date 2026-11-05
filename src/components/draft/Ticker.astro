@@ -1,0 +1,40 @@
+---
+/**
+ * Draft Copilot hero animation: the first picks of the mock draft from the panel screenshot
+ * land on the board one at a time, while a football spirals across the strip.
+ */
+const picks = [
+  { n: '1.01', who: 'J. Taylor', pos: 'RB' }, { n: '1.02', who: 'J. Gibbs', pos: 'RB' }, { n: '1.03', who: 'A. Jeanty', pos: 'RB' },
+  { n: '1.04', who: 'B. Robinson', pos: 'RB' }, { n: '1.05', who: 'C. McCaffrey', pos: 'RB' }, { n: '1.06', who: 'D. Achane', pos: 'RB' },
+  { n: '2.07', who: 'E. Egbuka', pos: 'WR' }, { n: '2.08', who: 'C. Brown', pos: 'RB' }, { n: '2.09', who: 'T. McBride', pos: 'TE' }, { n: '2.11', who: 'D. Maye', pos: 'QB' },
+];
+---
+<div class="dc-ticker" aria-hidden="true">
+  <div class="dc-ticker__track">
+    {picks.map((p, i) => <span class:list={['dc-tile', `dc-tile--${p.pos.toLowerCase()}`]} style={`--i:${i}`}><b>{p.n}</b><span>{p.who}</span><i>{p.pos}</i></span>)}
+    <span class="dc-tile dc-tile--clock" style={`--i:${picks.length}`}><b>5.04</b><span>on the clock</span><i>YOU</i></span>
+  </div>
+  <svg class="dc-ball" viewBox="-30 -20 60 40" width="60" height="40">
+    <ellipse rx="26" ry="15" fill="#8a4420" stroke="#2f1709" stroke-width="2" />
+    <path d="M-9 0H9M-6 -4V4M-2 -4V4M2 -4V4M6 -4V4" stroke="#f3efe6" stroke-width="2" fill="none" />
+    <path d="M-20 -8 q3 8 0 16M20 -8 q-3 8 0 16" stroke="#f3efe6" stroke-width="2" fill="none" />
+  </svg>
+</div>
+
+<style is:global>
+  .dc-ticker { position: relative; max-width: 1020px; margin: 36px auto 0; padding-top: 34px; }
+  .dc-ticker__track { display: flex; gap: 6px; overflow: hidden; border-top: 2px solid var(--accent); border-bottom: 1px solid var(--line); padding: 10px 0; }
+  .dc-tile { flex: 1 0 94px; display: grid; gap: 2px; padding: 8px 10px; background: color-mix(in srgb, var(--bg-elev) 85%, transparent); border-left: 3px solid var(--pc, var(--accent)); text-align: left; font-family: var(--font-mono); font-size: 0.68rem; color: var(--fg-2); opacity: 0; transform: translateY(-18px); animation: dc-land 0.5s var(--ease-out) forwards; animation-delay: calc(0.25s + var(--i) * 0.16s); }
+  .dc-tile b { color: var(--fg); font-size: 0.72rem; letter-spacing: 0.06em; }
+  .dc-tile span { font-family: var(--font-body); font-size: 0.78rem; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dc-tile i { font-style: normal; color: var(--pc, var(--accent)); font-weight: 700; letter-spacing: 0.1em; }
+  .dc-tile--rb { --pc: #4ade80; } .dc-tile--wr { --pc: #60a5fa; } .dc-tile--te { --pc: #fbbf24; } .dc-tile--qb { --pc: #f472b6; }
+  .dc-tile--clock { --pc: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); outline: 1px solid var(--accent); }
+  .dc-ball { position: absolute; top: 0; left: 0; offset-path: path('M 20 20 Q 260 -46 520 22 T 1000 16'); offset-rotate: 0deg; animation: dc-fly 2.6s cubic-bezier(0.3, 0.1, 0.4, 1) 0.2s both; }
+  .dc-ball ellipse, .dc-ball path { transform-origin: 0 0; animation: dc-spin 0.55s linear infinite; }
+  @keyframes dc-land { to { opacity: 1; transform: none; } }
+  @keyframes dc-fly { from { offset-distance: 0%; opacity: 0; } 8% { opacity: 1; } to { offset-distance: 100%; opacity: 1; } }
+  @keyframes dc-spin { to { transform: rotateX(360deg); } }
+  @media (max-width: 760px) { .dc-tile { flex-basis: 84px; } .dc-ball { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .dc-tile { animation: none; opacity: 1; transform: none; } .dc-ball { animation: none; offset-distance: 100%; } .dc-ball ellipse, .dc-ball path { animation: none; } }
+</style>

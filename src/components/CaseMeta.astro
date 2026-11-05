@@ -1,0 +1,19 @@
+---
+/**
+ * The top of a case-study page, as in the template: "03 / CASE STUDY 01", then
+ * ROLE and CONTEXT. The page's own hero follows it.
+ */
+import type { Project } from '../data/projects';
+interface Props { project: Project; index: number }
+const { project, index } = Astro.props;
+const n = (v: number) => String(v).padStart(2, '0');
+---
+<div class="container">
+  <div class="case-meta">
+    <span class="eyebrow reveal"><span class="eyebrow__num">{n(index + 3)}</span><span class="eyebrow__slash">/</span><span>Case study {n(index + 1)}</span></span>
+    <dl class="case-meta__row reveal" style="--i:1">
+      <div><dt>Role</dt><dd>{project.role}</dd></div>
+      <div><dt>Context</dt><dd>{project.context}</dd></div>
+    </dl>
+  </div>
+</div>

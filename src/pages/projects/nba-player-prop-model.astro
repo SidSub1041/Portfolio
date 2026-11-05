@@ -10,6 +10,8 @@ import '@fontsource/barlow/500.css';
 import '@fontsource/barlow/600.css';
 import '@fontsource/barlow/700.css';
 import Base from '../../layouts/Base.astro';
+import CaseMeta from '../../components/CaseMeta.astro';
+import CaseTrio from '../../components/CaseTrio.astro';
 import Icon from '../../components/Icon.astro';
 import Dialog from '../../components/Dialog.astro';
 import SectionHead from '../../components/SectionHead.astro';
@@ -101,6 +103,8 @@ const clv = board.clv;
       </div>
     </div>
 
+    <CaseMeta project={project} index={0} />
+
     <!-- 1. Hero -->
     <section class="hero nba-hero grain" aria-labelledby="nba-title">
       <div class="hero__bg nba-hero__bg" aria-hidden="true">
@@ -111,8 +115,8 @@ const clv = board.clv;
         <div class="nba-hero__copy">
           <span class="kicker reveal"><span class="dot"></span> Self-grading · runs every night of the <span data-live="season-key">{cur}</span> season</span>
           <h1 id="nba-title" class="reveal" style="--i:1">NBA Player<br />Prop Model</h1>
-          <p class="lead reveal" style="--i:2">{project.oneLiner} Every player with a line is projected from two seasons of game logs, adjusted for the matchup, turned into a probability and priced against the de-vigged market at the best book.</p>
-          <p class="nba-hero__claim reveal" style="--i:3"><Icon name="shield" size={20} /><span>Published nightly, wins and losses alike. Every pick is graded against the box score and the closing line the next morning, and the record below is the one the pipeline writes.</span></p>
+          <p class="lead reveal" style="--i:2">{project.oneLiner} Every player with a line gets a projection, a probability and a price. If the price pays, it goes on the board.</p>
+          <p class="nba-hero__claim reveal" style="--i:3"><Icon name="shield" size={20} /><span>Published nightly, wins and losses alike. Every pick is graded against the box score and the closing line the next morning. The record below is the one the pipeline writes, not the one I would choose.</span></p>
           <div class="hero__actions reveal" style="--i:4">
             <a class="btn btn--primary btn--lg" href={live.url}>Open the live board <Icon name="arrow-up-right" size={16} /></a>
             <a class="btn btn--ghost btn--lg" href="#method">How a pick is made <Icon name="arrow-down" size={16} class="arrow" /></a>
@@ -144,6 +148,8 @@ const clv = board.clv;
       </div>
     </section>
 
+    <CaseTrio project={project} />
+
     <nav class="nba-jump" aria-label="On this page">
       <div class="container nba-jump__inner">
         <span class="nba-jump__label">On this page</span>
@@ -154,7 +160,7 @@ const clv = board.clv;
     <!-- 2. How a pick is made -->
     <section class="section nba-section" id="method" aria-labelledby="method-title">
       <div class="container">
-        <SectionHead eyebrow="Method" title="How a pick is made" lead="Seven steps from the night's slate to a graded pick, as the README describes them. The market sets the lines; the model only decides which side, if any, pays." />
+        <SectionHead num="01" eyebrow="Method" title="How a pick is made" lead="Seven steps from the night's slate to a graded pick. The market sets the lines. The model only decides which side, if any, pays." />
         <div class="nba-method">
           <div class="nba-method__aside">
             <figure class="nba-pick reveal reveal--scale">
@@ -202,7 +208,7 @@ const clv = board.clv;
     <section class="section section--bordered nba-section nba-section--plank" id="record" aria-labelledby="record-title">
       <div class="container" id="nba-live" data-src={nba.liveData.resultsHistory} data-snapshot={snapshotDate} data-live-state="snapshot">
         <div class="nba-record__head">
-          <SectionHead eyebrow="Record" title="The record, as graded" lead="Cumulative units by graded day, the units each night won or lost, and the season totals. The current season is losing, and the page says so, because the pipeline writes these numbers, not the author." />
+          <SectionHead num="02" eyebrow="Record" title="The record, as graded" lead="Cumulative units by graded day, each night's result, and the season totals. The current season is losing. The page says so because the pipeline writes these numbers, not me." />
           <div class="nba-live reveal" style="--i:3">
             <div class="nba-live__state">
               <span class="nba-live__dot" aria-hidden="true"></span>
@@ -236,7 +242,7 @@ const clv = board.clv;
     <!-- 4. By stat and by grade -->
     <section class="section section--bordered nba-section" id="splits" aria-labelledby="splits-title">
       <div class="container">
-        <SectionHead eyebrow="Splits" title="By stat, by grade, by side" lead={`All ${fmtInt(nba.gradedRows)} graded picks across both seasons, cut the way the learner's segment report cuts them.`} />
+        <SectionHead num="03" eyebrow="Splits" title="By stat, by grade, by side" lead={`All ${fmtInt(nba.gradedRows)} graded picks across both seasons, cut the way the learner's segment report cuts them.`} />
         <div class="nba-splits">
           <div class="chart-card nba-chart reveal" data-tabs>
             <div class="chart-card__head">
@@ -299,7 +305,7 @@ const clv = board.clv;
     <section class="section section--bordered nba-section nba-section--plank" id="board" aria-labelledby="board-title">
       <div class="container">
         <div class="nba-board-head">
-          <SectionHead eyebrow="Last graded board" title={`${fmtDate(board.date)}: ${board.hits}–${board.misses}, ${fmtUnits(board.units)}`} lead="Every pick the board published that night, with the model's probability at pick time, the price taken, what the player actually did, and the closing-line value where the close could be verified." />
+          <SectionHead num="04" eyebrow="Last graded board" title={`${fmtDate(board.date)}: ${board.hits}–${board.misses}, ${fmtUnits(board.units)}`} lead="Every pick the board published that night: the model's probability at pick time, the price, what the player did, and the closing-line value where the close could be verified." />
           <dl class="nba-clv reveal" style="--i:3" aria-label="Closing-line value for the night">
             <div><dt>Closes verified</dt><dd>{clv.n} <span class="muted">of {board.picks}</span></dd></div>
             <div><dt>Unverified</dt><dd>{clv.unverified}</dd></div>
@@ -318,7 +324,7 @@ const clv = board.clv;
     <!-- 6. The learning loop -->
     <section class="section section--bordered nba-section" id="learning" aria-labelledby="learning-title">
       <div class="container">
-        <SectionHead eyebrow="The learning loop" title="It studies its own results every morning" lead="After grading, the learner labels every prop that had a line, about 100 a night and not only the published picks, retrains, checks itself walk-forward, and writes a post-mortem. It is not allowed to touch the board until it has earned it." />
+        <SectionHead num="05" eyebrow="The learning loop" title="It studies its own results every morning" lead="After grading, the learner labels every prop that had a line, about 100 a night. It retrains, checks itself walk-forward and writes a post-mortem. It cannot touch the board until it earns it." />
         <div class="nba-learn">
           <div class="nba-learn__col">
             <div class="panel nba-console reveal">
@@ -384,7 +390,7 @@ const clv = board.clv;
     <!-- 7. Pipeline -->
     <section class="section section--bordered nba-section nba-section--plank" id="pipeline" aria-labelledby="pipeline-title">
       <div class="container">
-        <SectionHead eyebrow="Pipeline" title="One day on GitHub Actions" lead="Five cron schedules build, fill, snapshot and grade the board. Crons are UTC, so the Eastern times are the summer ones; from November to mid-March everything runs an hour earlier." />
+        <SectionHead num="06" eyebrow="Pipeline" title="One day on GitHub Actions" lead="Five cron schedules build, fill, snapshot and grade the board. Crons are UTC, so the Eastern times are summer times. From November to mid-March everything runs an hour earlier." />
         <div class="reveal"><Timeline /></div>
         <div class="grid grid--3 nba-ops">
           <div class="feature reveal" style="--i:1">
@@ -409,7 +415,7 @@ const clv = board.clv;
     <!-- 8. Links -->
     <section class="section section--bordered nba-section" id="links" aria-labelledby="links-title">
       <div class="container">
-        <SectionHead eyebrow="Links" title="See it running" lead="The board, the dashboard and the code. About 11,100 lines of Python and 2,000 of TypeScript; the site is Next.js 14 with Tailwind." />
+        <SectionHead num="07" eyebrow="Links" title="See it running" lead="The board, the dashboard and the code. About 11,100 lines of Python and 2,000 of TypeScript. The site is Next.js 14 with Tailwind." />
         <div class="grid grid--3 nba-links">
           <a class="card card--hover nba-link reveal" href={live.url} style="--i:1">
             <Icon name="globe" />
@@ -496,6 +502,7 @@ const clv = board.clv;
 
   <script src="../../scripts/nba-live.ts"></script>
   <script src="../../scripts/nba-board.ts"></script>
+  <script src="../../scripts/nba-ball.ts"></script>
 </Base>
 
 <style is:global>

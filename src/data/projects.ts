@@ -20,6 +20,12 @@ export interface Project {
   status: string;
   summary: string;
   oneLiner: string;
+  /** Case-study fields (template: Role, Context, The challenge, The process, Outcome). */
+  role: string;
+  context: string;
+  challenge: string;
+  process: string;
+  outcome: string;
   stack: string[];
   languages: string[];
   links: ProjectLink[];
@@ -36,9 +42,13 @@ export const projects: Project[] = [
     ink: '#b9471a',
     period: 'Apr 2026 – present',
     status: 'Live, runs nightly',
-    oneLiner: 'A self-grading edge model for NBA player props.',
-    summary:
-      'Every player with a line is projected from two seasons of game logs, adjusted for the matchup, turned into a probability and priced against the de-vigged market at the best book. Picks publish to a dashboard, get graded against the closing line every morning, and feed a learning loop that writes its own post-mortem.',
+    oneLiner: "A model for NBA player props that grades itself every morning.",
+    summary: "Every player with a line gets a projection from two seasons of game logs, adjusted for the matchup. That becomes a probability and gets priced against the de-vigged market. Picks publish to a board, get graded against the closing line the next morning, and feed a learner that writes its own post-mortem.",
+    role: "Solo. Model, pipeline, grading, dashboard.",
+    context: "Personal project \u00b7 April 2026 to now \u00b7 runs nightly on GitHub Actions",
+    challenge: "Most prop models are filters dressed up as models. Mine was too, until I measured it: the published picks hit 48% while the props left on the board hit 52%. I needed a projection, a probability, a price, and a way to grade all three.",
+    process: "Blend two seasons of game logs by sample size. Scale by the matchup. Turn the projection into a distribution, compare it with the de-vigged market, and keep only picks that clear the price. Grade every pick against the box score and the closing line. Let a learner study the results, but keep it in shadow mode until it beats the market.",
+    outcome: "A pipeline that runs five schedules a day without me. The current season is losing, and the page says so. The closing-line value and the post-mortems are the parts I trust most.",
     stack: ['Python', 'NBA.com tracking data', 'The Odds API', 'GitHub Actions', 'Next.js', 'Tableau Public'],
     languages: ['Python', 'TypeScript'],
     links: [
@@ -61,9 +71,13 @@ export const projects: Project[] = [
     ink: '#4d7c0f',
     period: 'Aug 2026',
     status: 'Shipped: web app, Chrome extension, MCP server',
-    oneLiner: 'A live fantasy-football draft assistant that advises and never picks.',
-    summary:
-      'Watches a Sleeper draft (Yahoo in beta), mirrors every pick, ranks the best available by position under a tunable strategy, and runs 400 simulated drafts per pick to say whether a player will still be there at your next turn. Ships as a web app, a Chrome sidebar extension and an 18-tool MCP server for Claude.',
+    oneLiner: "A live draft assistant that advises and never picks.",
+    summary: "It watches a Sleeper draft, mirrors every pick, ranks the best available under a strategy you can change mid-draft, and runs 400 simulated drafts per pick to say whether a player will still be there next turn. It ships as a web app, a Chrome sidebar and an MCP server for Claude.",
+    role: "Solo. Engine, server, web panel, extension, MCP server, hosting.",
+    context: "Personal project \u00b7 August 2026 \u00b7 Python standard library only",
+    challenge: "A cheat sheet goes stale on the first pick. I wanted something that keeps the math current as the room drafts, explains itself, and never clicks anything on my behalf.",
+    process: "Fit value curves to a draft guide. Build an ADP baseline that does not depend on the guide. Simulate the picks between my turns with an opponent model. Score every candidate on value now, the expected board next turn, and urgency. Put it in a web panel, dock it beside the draft room, and expose the same engine to Claude as 18 tools.",
+    outcome: "A hosted app, a Chrome extension and an MCP server that run the same engine, with 72 tests behind them. Every suggestion comes with its reasoning. The pick is always mine.",
     stack: ['Python (standard library only)', 'SQLite', 'Monte Carlo simulation', 'Chrome extension (Manifest V3)', 'MCP server', 'Docker · Fly.io · Vercel'],
     languages: ['Python', 'JavaScript'],
     links: [
@@ -85,9 +99,13 @@ export const projects: Project[] = [
     ink: '#0f8a55',
     period: 'Jul – Sep 2026',
     status: 'Research complete, paper-trading pipeline built',
-    oneLiner: 'How prediction-market prices react to every pitch, and a Rust pipeline to trade it on paper.',
-    summary:
-      'An event study of Kalshi MLB moneyline and totals markets around 455 plate-appearance events found momentum, not overreaction: prices keep drifting after scoring plays. That led to a Rust collector and paper trader with a win-probability engine, maker-side entries, fee-aware exits and a pure risk layer with no bypass.',
+    oneLiner: "How Kalshi prices react to every pitch, and a Rust pipeline to trade it on paper.",
+    summary: "I measured how moneyline and totals prices moved around 455 plate appearances. Prices kept drifting after scoring plays instead of snapping back. That finding became a Rust collector and paper trader with a win-probability engine, maker-side entries, fee-aware exits and a risk layer with no bypass.",
+    role: "Solo. Research, Rust pipeline, risk layer, dashboard.",
+    context: "Personal project \u00b7 July to September 2026 \u00b7 882 games collected",
+    challenge: "Prediction markets react to live games in seconds. I wanted to know whether those reactions were right, and whether anything was left after fees.",
+    process: "Align one-minute candles to play-by-play for six games. Measure the immediate move and the drift after each kind of play. Test for overreaction. Then build a collector for the full season, a paper trader that fills against live books, and a risk module that cannot be talked around.",
+    outcome: "The pilot found momentum, not overreaction. The season backtest then showed the original edge did not survive a survivorship-bias audit, so I dropped it. The pipeline, the risk layer and the honest record stayed.",
     stack: ['Python · pandas · SciPy · scikit-learn', 'Rust (async collector and paper trader)', 'Kalshi REST and WebSocket APIs', 'MLB Stats API (GUMBO)', 'launchd agents'],
     languages: ['Rust', 'Python'],
     links: [
@@ -109,9 +127,13 @@ export const projects: Project[] = [
     ink: '#1d4ed8',
     period: 'Jan – Aug 2026',
     status: 'Live dashboard',
-    oneLiner: 'Projected game totals versus the Vegas line, built on nflfastR play-by-play.',
-    summary:
-      'A linear-regression model over team EPA, yardage and turnover features projects the total for each playoff game and compares it with the sportsbook line to flag over, under or hold. The Next.js dashboard shows every game card, the model metrics and the injury report behind the numbers.',
+    oneLiner: "Projected game totals against the Vegas line, built on nflfastR play-by-play.",
+    summary: "A linear regression over team EPA, yardage and turnover features projects the total for each playoff game. It compares the number with the sportsbook line and flags over, under or hold. The dashboard shows the cards, the model metrics and the injury report.",
+    role: "Solo. Data pipeline, model, Next.js dashboard.",
+    context: "Personal project \u00b7 January to August 2026 \u00b7 Divisional Round 2026",
+    challenge: "I wanted a totals model I could explain in one dialog, with its errors on the same page as its picks.",
+    process: "Pull 49,000+ plays from nflfastR. Weight the current season at 70%. Compute offensive and defensive EPA, split by pass and rush. Fit a regression, project each game, and compare with The Odds API line. Check the approach on three held-out seasons.",
+    outcome: "A live dashboard with four game cards and a 2-point rule for calls. The single-season fit explains little on its own, so the page shows the 854-game test next to it.",
     stack: ['Python · scikit-learn · nflfastR', 'The Odds API', 'ESPN injury scrape', 'Next.js 16 · React · Tailwind · Radix UI'],
     languages: ['Python', 'TypeScript'],
     links: [
@@ -133,9 +155,13 @@ export const projects: Project[] = [
     ink: '#0e7490',
     period: '2024',
     status: 'Fork, extended',
-    oneLiner: 'A typed Java client for the Sleeper fantasy-football API.',
-    summary:
-      'A fork of the sdcalmes/sleeper-api client: Users, Leagues, Drafts, Players and Stats endpoints mapped to plain Java objects, built with Gradle and tested with JUnit on CircleCI. It was the first step toward a draft assistant, an idea that later became Draft Copilot.',
+    oneLiner: "A typed Java client for the Sleeper API, and where it led.",
+    summary: "A fork of sdcalmes/sleeper-api: users, leagues, drafts, players and stats mapped to plain Java objects, built with Gradle and tested on CircleCI. I added the first piece of a draft assistant here. The idea later became Draft Copilot.",
+    role: "Fork and extension.",
+    context: "January 2024 \u00b7 Java 8, Retrofit, Gson",
+    challenge: "I wanted draft data from Sleeper in a form I could build on. The upstream client had the endpoints. It did not have a draft model yet.",
+    process: "Read the client group by group. Add a football draft subclass as the starting point. Then step back, pick Python, and build the assistant as its own project.",
+    outcome: "A small change, honestly labelled, and a clear line from it to Draft Copilot. This page also runs the client's three main calls live against the API.",
     stack: ['Java', 'Gradle', 'JUnit', 'CircleCI', 'Sleeper REST API'],
     languages: ['Java'],
     links: [

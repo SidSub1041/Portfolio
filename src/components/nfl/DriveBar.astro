@@ -1,0 +1,53 @@
+---
+/**
+ * NFL tab hero animation: a drive. The ball starts at the 20, moves down a hard-edged field
+ * strip to the end zone, and the yard markers light up as it passes them.
+ */
+const marks = [10, 20, 30, 40, 50, 40, 30, 20, 10];
+---
+<div class="nfl-drive reveal" aria-hidden="true" data-drive>
+  <div class="nfl-drive__field">
+    <span class="nfl-drive__ez nfl-drive__ez--left"></span>
+    {marks.map((m, i) => <span class="nfl-drive__mark" style={`--i:${i}`}><i></i><b>{m}</b></span>)}
+    <span class="nfl-drive__ez nfl-drive__ez--right"><span>END ZONE</span></span>
+    <span class="nfl-drive__los"></span>
+    <svg class="nfl-drive__ball" viewBox="-14 -9 28 18" width="34" height="22">
+      <ellipse rx="13" ry="8" fill="#8a4420" stroke="#2f1709" stroke-width="1.4" />
+      <path d="M-4 0H4M-2.5 -2V2M0 -2V2M2.5 -2V2" stroke="#f3efe6" stroke-width="1.2" fill="none" />
+    </svg>
+  </div>
+  <p class="nfl-drive__cap mono">A drive, 20 to the end zone, as the page loads</p>
+</div>
+
+<script>
+  // Start the drive shortly after the page loads, even when the strip sits below the fold.
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLElement>('[data-drive]').forEach((el) => window.setTimeout(() => el.classList.add('is-in'), 350));
+  });
+</script>
+
+<style is:global>
+  .nfl-drive { margin-top: 26px; max-width: 640px; }
+  .nfl-drive__field { position: relative; height: 56px; display: grid; grid-template-columns: 36px repeat(9, 1fr) 54px; background: color-mix(in srgb, var(--pos) 9%, var(--bg-elev)); border: 1px solid var(--line-strong); overflow: hidden; }
+  .nfl-drive__ez { background: color-mix(in srgb, var(--accent) 85%, #000); position: relative; }
+  .nfl-drive__ez--right span { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.14em; color: #fff; writing-mode: vertical-rl; transform: rotate(180deg); opacity: 0.9; }
+  .nfl-drive__mark { position: relative; border-left: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+  .nfl-drive__mark i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: color-mix(in srgb, var(--accent) 14%, transparent); transform: scaleX(0); transform-origin: left; }
+  .nfl-drive__mark b { position: absolute; left: 4px; bottom: 3px; font-family: var(--font-mono); font-weight: 500; font-size: 0.58rem; color: color-mix(in srgb, var(--accent) 60%, transparent); }
+  .nfl-drive__los { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--hl); left: calc(36px + (100% - 90px) * 0.2); }
+  .nfl-drive__ball { position: absolute; top: 50%; left: calc(36px + (100% - 90px) * 0.2); transform: translate(-50%, -50%) rotate(-8deg); }
+  .nfl-drive.is-in .nfl-drive__ball { animation: nfl-run 2.4s cubic-bezier(0.35, 0.05, 0.3, 1) 0.4s forwards; }
+  .nfl-drive.is-in .nfl-drive__los { animation: nfl-los 2.4s cubic-bezier(0.35, 0.05, 0.3, 1) 0.4s forwards; }
+  .nfl-drive.is-in .nfl-drive__mark i { animation: nfl-light 0.35s ease forwards; animation-delay: calc(0.55s + var(--i) * 0.22s); }
+  .nfl-drive.is-in .nfl-drive__ez--right { animation: nfl-score 0.5s ease 2.85s forwards; }
+  .nfl-drive__cap { margin-top: 8px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
+  @keyframes nfl-run { to { left: calc(100% - 26px); transform: translate(-50%, -50%) rotate(352deg); } }
+  @keyframes nfl-los { to { left: calc(100% - 54px); } }
+  @keyframes nfl-light { to { transform: scaleX(1); } }
+  @keyframes nfl-score { 50% { background: var(--hl); } to { background: var(--pos); } }
+  @media (prefers-reduced-motion: reduce) {
+    .nfl-drive__ball { left: calc(100% - 26px); }
+    .nfl-drive__mark i { transform: scaleX(1); }
+    .nfl-drive.is-in .nfl-drive__ball, .nfl-drive.is-in .nfl-drive__los, .nfl-drive.is-in .nfl-drive__mark i, .nfl-drive.is-in .nfl-drive__ez--right { animation: none; }
+  }
+</style>

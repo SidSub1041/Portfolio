@@ -41,7 +41,7 @@ npm run preview    # serve dist/ locally
 3. **Contact form.** The form in the pop-up opens the visitor's mail app by default. To receive
    submissions without exposing an email, create a form endpoint (Formspree, Basin, Netlify
    Forms, or your own API that accepts JSON) and paste its URL into `contactEndpoint`.
-4. **About text.** The two "About" paragraphs and the "Now" list live in `src/site.config.ts`.
+4. **About text and profile.** The "Profile" paragraphs, the "Now" list, the Based in / Focus / Availability row, your website, and the optional Experience and Education lists all live in `src/site.config.ts`. The Background section only appears once one of those lists has an entry.
 5. **Project facts and links.** `src/data/projects.ts` is the registry every page reads
    (names, tab labels, colours, summaries, stack, links). Confirm the two hosted URLs before
    launch: the Draft Copilot app on Fly.io and the NFL dashboard on Vercel.

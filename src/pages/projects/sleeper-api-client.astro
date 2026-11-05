@@ -6,6 +6,8 @@
  * repository (README.md, build.gradle, .circleci/config.yml, src/main/java).
  */
 import Base from '../../layouts/Base.astro';
+import CaseMeta from '../../components/CaseMeta.astro';
+import CaseTrio from '../../components/CaseTrio.astro';
 import Icon from '../../components/Icon.astro';
 import Dialog from '../../components/Dialog.astro';
 import SectionHead from '../../components/SectionHead.astro';
@@ -52,6 +54,8 @@ const description = `${p.oneLiner} A fork of sdcalmes/sleeper-api: ${files} Java
       </div>
     </div>
 
+    <CaseMeta project={p} index={4} />
+
     <!-- [00] Hero -->
     <section class="hero sl-hero grain" id="top">
       <div class="hero__bg sl-hero__bg" aria-hidden="true">
@@ -67,8 +71,9 @@ const description = `${p.oneLiner} A fork of sdcalmes/sleeper-api: ${files} Java
           <div>
             <span class="kicker reveal"><span class="dot"></span> Drawing 05 · Java library · {p.period}</span>
             <h1 class="reveal" style="--i:1">{p.name}</h1>
-            <p class="lead reveal" style="--i:2">{p.oneLiner} Users, leagues, drafts, players and stats mapped to plain Java objects, built with Gradle, tested with JUnit on CircleCI.</p>
+            <p class="lead reveal" style="--i:2">{p.oneLiner} Users, leagues, drafts, players and stats as plain Java objects. Built with Gradle, tested with JUnit on CircleCI.</p>
             <p class="sl-lineage reveal" style="--i:3"><Icon name="branch" size={18} /><span><b>Lineage:</b> a fork of sdcalmes/sleeper-api, extended toward a draft assistant.</span></p>
+            <pre class="sl-typeline reveal" style="--i:3" aria-label="The README calls, typed out"><code id="sl-type"></code></pre>
             <div class="sl-dim reveal" style="--i:4"><span class="sl-dim__line"></span><span class="sl-dim__label"><b data-count={javaLines} data-format="int">{javaLines.toLocaleString('en-US')}</b> lines of Java · {files} files</span><span class="sl-dim__line"></span></div>
             <div class="hero__actions reveal" style="--i:5">
               <a class="btn btn--primary" href={repoLink.url}><Icon name="github" size={17} /> {repoLink.label}</a>
@@ -87,10 +92,12 @@ const description = `${p.oneLiner} A fork of sdcalmes/sleeper-api: ${files} Java
       </div>
     </section>
 
+    <CaseTrio project={p} />
+
     <!-- [01] Coverage -->
     <section class="section sl-section" data-num="[01]" id="coverage">
       <div class="container">
-        <SectionHead eyebrow="[01] Coverage" title="Eight package groups, one Retrofit client" lead="Each endpoint group is a Java package: an interface that declares the GET paths, an Impl class that executes the call and parses errors, and plain Java objects for the JSON." />
+        <SectionHead num="01" eyebrow="Coverage" title="Eight package groups, one Retrofit client" lead="Each endpoint group is a Java package: an interface that declares the GET paths, an Impl class that runs the call and parses errors, and plain objects for the JSON." />
         <div class="stat-row sl-stats reveal">
           <Stat label="Lines of Java" value={javaLines.toLocaleString('en-US')} count={javaLines} format="int" sub="src/main/java only" />
           <Stat label="Source files" value={String(files)} count={files} format="int" sub={`${groupCount} package groups`} />
@@ -132,7 +139,7 @@ const description = `${p.oneLiner} A fork of sdcalmes/sleeper-api: ${files} Java
     <!-- [02] Code -->
     <section class="section sl-section sl-section--sunk sl-grid-bg" data-num="[02]" id="code">
       <div class="container">
-        <SectionHead eyebrow="[02] Usage" title="Five calls from the README" lead="The README documents the client in five lines. They are quoted as written; the yellow placeholders are the README's own. Each one maps to a single GET below." />
+        <SectionHead num="02" eyebrow="Usage" title="Five calls from the README" lead="The README documents the client in five lines. They are quoted as written. The yellow placeholders are the README's own. Each maps to one GET below." />
         <div class="sl-code-grid">
           {readmeExamples.map((ex, i) => (
             <CodeBlock class:list={['reveal', { 'sl-code--wide': ex.id === 'client' }]} label={ex.label} http={ex.http} code={ex.code} style={`--i:${i}`}>
@@ -150,7 +157,7 @@ const description = `${p.oneLiner} A fork of sdcalmes/sleeper-api: ${files} Java
     <!-- [03] Architecture -->
     <section class="section sl-section" data-num="[03]" id="architecture">
       <div class="container">
-        <SectionHead eyebrow="[03] Architecture" title="From request to object" lead="Every call takes the same path. A Retrofit interface declares the GET, the Impl executes it synchronously, Gson maps the JSON onto plain objects, and anything but a 2xx becomes a SleeperError with the status code and the URL that failed." />
+        <SectionHead num="03" eyebrow="Architecture" title="From request to object" lead="Every call takes the same path. A Retrofit interface declares the GET. The Impl runs it. Gson maps the JSON onto plain objects. Anything but a 2xx becomes a SleeperError with the status code and the URL." />
         <div class="sl-schem-frame draw reveal" aria-label="Architecture schematic">
           <span class="sl-schem-frame__tag">Fig. 3 · call path</span>
           <Schematic layout="wide" />
@@ -167,7 +174,7 @@ const description = `${p.oneLiner} A fork of sdcalmes/sleeper-api: ${files} Java
     <!-- [04] Explorer -->
     <section class="section sl-section sl-section--sunk sl-grid-bg" data-num="[04]" id="explorer">
       <div class="container">
-        <SectionHead eyebrow="[04] Interactive" title="Call the API the way the client does" lead="Type a Sleeper username. The page makes the same three requests the README examples make, straight from your browser to api.sleeper.app, and shows the equivalent Java line for each step." />
+        <SectionHead num="04" eyebrow="Interactive" title="Call the API the way the client does" lead="Type a Sleeper username. The page makes the same three requests the README examples make, straight from your browser to api.sleeper.app, and shows the Java line for each step." />
         <div class="card sl-explorer reveal" id="sl-explorer" data-api="https://api.sleeper.app">
           <div class="sl-explorer__head">
             <span class="sl-explorer__title"><Icon name="globe" size={18} /> API explorer <span class="badge badge--soft">live · api.sleeper.app</span></span>
@@ -215,7 +222,7 @@ const description = `${p.oneLiner} A fork of sdcalmes/sleeper-api: ${files} Java
     <!-- [05] Where it led -->
     <section class="section sl-section" data-num="[05]" id="lineage">
       <div class="container">
-        <SectionHead eyebrow="[05] Where it led" title="One subclass, then a different product" lead="The fork's own change is small, and this page says so. The idea behind it grew into a separate project." />
+        <SectionHead num="05" eyebrow="Where it led" title="One subclass, then a different product" lead="The fork's own change is small, and this page says so. The idea behind it grew into a separate project." />
         <div class="sl-rev">
           <div class="card sl-card sl-rev__block reveal">
             <div class="sl-rev__head"><span>Revision block</span><span>Fantasy-Football-Draft-Assistant</span></div>
@@ -341,6 +348,7 @@ const description = `${p.oneLiner} A fork of sdcalmes/sleeper-api: ${files} Java
 
   <script src="../../scripts/sleeper-explorer.ts"></script>
   <script src="../../scripts/sleeper-sheet.ts"></script>
+  <script src="../../scripts/sleeper-type.ts"></script>
 </Base>
 
 <style is:global>
@@ -357,6 +365,9 @@ const description = `${p.oneLiner} A fork of sdcalmes/sleeper-api: ${files} Java
   .sl-section--sunk + .sl-section, .sl-section + .sl-section--sunk { border-top: 1px solid var(--line); }
 
   /* Hero */
+  .sl-typeline { margin-top: 22px; max-width: 560px; min-height: 5.2em; font-size: 0.8rem; line-height: 1.65; background: color-mix(in srgb, var(--bg-sunk) 80%, transparent); border: 1px solid var(--line); border-left: 3px solid var(--accent); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg-2); }
+  .sl-cursor { display: inline-block; width: 0.6em; height: 1.05em; vertical-align: -0.15em; background: var(--accent); margin-left: 2px; animation: sl-blink 1s steps(2, start) infinite; }
+  @keyframes sl-blink { to { visibility: hidden; } }
   .sl-hero { padding-top: clamp(40px, 6vw, 80px); }
   .sl-hero__bg { background-color: var(--bg); background-image: linear-gradient(var(--sl-grid) 1px, transparent 1px), linear-gradient(90deg, var(--sl-grid) 1px, transparent 1px), linear-gradient(var(--sl-grid-strong) 1px, transparent 1px), linear-gradient(90deg, var(--sl-grid-strong) 1px, transparent 1px); background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px; background-position: center top; -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%); mask-image: linear-gradient(180deg, #000 55%, transparent 100%); overflow: hidden; }
   .sl-hero__glow { position: absolute; top: -20%; right: -10%; width: 58%; height: 90%; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 26%, transparent), transparent 72%); filter: blur(12px); }

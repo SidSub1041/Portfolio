@@ -5,6 +5,9 @@ import '@fontsource/poppins/500.css';
 import '@fontsource/poppins/600.css';
 import '@fontsource/poppins/700.css';
 import Base from '../../layouts/Base.astro';
+import CaseMeta from '../../components/CaseMeta.astro';
+import CaseTrio from '../../components/CaseTrio.astro';
+import Ticker from '../../components/draft/Ticker.astro';
 import Icon from '../../components/Icon.astro';
 import Dialog from '../../components/Dialog.astro';
 import SectionHead from '../../components/SectionHead.astro';
@@ -136,6 +139,8 @@ const shots = [
       </div>
     </div>
 
+    <CaseMeta project={p} index={1} />
+
     <!-- 1. Hero -->
     <section class="hero dc-hero grain" id="top">
       <div class="hero__bg" aria-hidden="true">
@@ -147,18 +152,21 @@ const shots = [
       <div class="container dc-hero__inner">
         <span class="kicker reveal"><span class="dot"></span> Fantasy football · live draft assistant</span>
         <h1 class="reveal" style="--i:1">A live assistant for your fantasy draft</h1>
-        <p class="lead reveal" style="--i:2">It watches every pick, runs the numbers, and answers in plain English. Sleeper today, Yahoo in beta. It advises; you draft.</p>
+        <p class="lead reveal" style="--i:2">It watches every pick, runs the numbers and answers in plain English. Sleeper today, Yahoo in beta. It advises. You draft.</p>
         <div class="hero__actions reveal" style="--i:3">
           <a class="btn btn--primary btn--lg" href={live.url}>Open the hosted app <Icon name="arrow-up-right" class="arrow" /></a>
           <a class="btn btn--ghost btn--lg" href={repo.url}><Icon name="github" /> Source on GitHub</a>
         </div>
         <p class="dc-hero__fine reveal" style="--i:4">Free · no sign-up needed to draft · advisory only, it never picks for you</p>
+        <Ticker />
         <figure class="shot dc-hero__shot reveal reveal--scale" style="--i:5">
           <img src={img('draft-copilot-cockpit.jpg')} width="1400" height="836" loading="eager" decoding="async" alt="The Draft Copilot mid-draft: a live board on the left with the user one pick from the clock, best available by position with survival odds and ADP flags on the right, and the chat below." />
           <figcaption>The copilot during a Sleeper-style mock draft: the live board, best available by position with "% left" survival odds, and the chat.</figcaption>
         </figure>
       </div>
     </section>
+
+    <CaseTrio project={p} />
 
     <!-- Headline numbers -->
     <section class="dc-stats" aria-label="Headline numbers">
@@ -175,7 +183,7 @@ const shots = [
     <!-- 2. What it does -->
     <section class="section" id="features">
       <div class="container">
-        <SectionHead eyebrow="01 · What it does" title="Seven things it does on the clock" lead="A cheat sheet is static. This keeps the math current as the room drafts, and it says why." />
+        <SectionHead num="01" eyebrow="What it does" title="Seven things it does on the clock" lead="A cheat sheet is static. This keeps the math current as the room drafts, and it says why." />
         <div class="dc-rows">
           {features.map((f, i) => (
             <div class="dc-row reveal" style={`--i:${i}`}>
@@ -208,7 +216,7 @@ const shots = [
     <section class="dc-stadium" id="model">
       <img class="dc-stadium__bg" src={img('stadium-cc0.jpg')} alt="" width="1280" height="960" loading="lazy" decoding="async" data-parallax="0.08" />
       <div class="container dc-stadium__inner">
-        <span class="eyebrow reveal">02 · The model</span>
+        <span class="eyebrow reveal"><span class="eyebrow__num">02</span><span class="eyebrow__slash">/</span><span>The model</span></span>
         <h2 class="reveal" style="--i:1">Built on real draft data</h2>
         <p class="reveal" style="--i:2">Rankings from Joel Smyth's 2026 Draft Guide, a market baseline read from Sleeper, and the picks happening in your room. Four fitted components, nothing hidden: every number surfaces in the reasoning.</p>
       </div>
@@ -267,7 +275,7 @@ const shots = [
     <!-- 5. Interactive: ADP consumption curves -->
     <section class="section section--bordered" id="adp">
       <div class="container">
-        <SectionHead eyebrow="03 · Interactive" title="Where each position goes" lead="The market baseline behind every value and reach flag: how deep into each position a 12-team room usually is by a given pick. Between anchors the model interpolates in log-log space; past the last anchor it extends the final segment's slope. Hover the chart or drag the slider to read it, and click near another curve to switch position." />
+        <SectionHead num="03" eyebrow="Interactive" title="Where each position goes" lead="The market baseline behind every value and reach flag: how deep into each position a 12-team room usually is by a given pick. Drag the slider to read the curve. Click a position to switch." />
         <div class="dc-adp reveal" id="adp-demo" data-pos="RB" data-superflex="false" style={`--c:${SERIES_COLOR.RB}`}>
           <div class="dc-adp__controls">
             <div class="dc-adp__pos" role="group" aria-label="Position">
@@ -324,7 +332,7 @@ const shots = [
     <!-- 6. Architecture -->
     <section class="section section--bordered" id="architecture">
       <div class="container">
-        <SectionHead eyebrow="04 · Architecture" title="One engine, four ways in" lead="A standard-library-only Python server holds the draft state, the engine and a SQLite store. The web panel, the Chrome extension that docks it beside the draft room, an MCP server for Claude and a terminal session all run the same engine." />
+        <SectionHead num="04" eyebrow="Architecture" title="One engine, four ways in" lead="One Python server holds the draft state, the engine and a SQLite store. The web panel, the Chrome extension, the MCP server and the terminal all run the same engine." />
         <div class="dc-arch">
           <div class="dc-arch__col reveal" style="--i:0">
             <h4>Sources</h4>
@@ -383,7 +391,7 @@ const shots = [
       <div class="container">
         <div class="dc-acct">
           <div class="reveal">
-            <span class="eyebrow">05 · Accounts</span>
+            <span class="eyebrow"><span class="eyebrow__num">05</span><span class="eyebrow__slash">/</span><span>Accounts</span></span>
             <h2 id="accounts-title">Your drafts, remembered</h2>
             <p class="dc-acct__lead">Sign in with Google and every draft you run, mock or real, is archived to your account: every pick, every recommendation, your notes. Sleeper offers no sign-in of its own, so Sleeper accounts are linked by username; nothing sensitive depends on it. Accounts are optional, and everything else works without one.</p>
           </div>

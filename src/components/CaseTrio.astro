@@ -1,0 +1,15 @@
+---
+/** The challenge, the process, the outcome: the template's case-study trio, in my words. */
+import type { Project } from '../data/projects';
+interface Props { project: Project }
+const { project } = Astro.props;
+---
+<section class="case-trio" aria-label="Challenge, process and outcome">
+  <div class="container">
+    <div class="case-trio__grid">
+      <div class="reveal"><h3>The challenge</h3><p>{project.challenge}</p></div>
+      <div class="reveal" style="--i:1"><h3>The process</h3><p>{project.process}</p></div>
+    </div>
+    <div class="case-trio__outcome reveal" style="--i:2"><h3>Outcome</h3><p>{project.outcome}</p></div>
+  </div>
+</section>

@@ -7,6 +7,9 @@
  * named in DESIGN.md section 6.
  */
 import Base from '../../layouts/Base.astro';
+import CaseMeta from '../../components/CaseMeta.astro';
+import CaseTrio from '../../components/CaseTrio.astro';
+import DriveBar from '../../components/nfl/DriveBar.astro';
 import Icon from '../../components/Icon.astro';
 import Dialog from '../../components/Dialog.astro';
 import SectionHead from '../../components/SectionHead.astro';
@@ -95,6 +98,8 @@ const description = 'Projected NFL playoff game totals versus the Vegas line, fr
       </div>
     </div>
 
+    <CaseMeta project={p} index={3} />
+
     <!-- 1. Header, like the app -->
     <section class="hero nfl-hero grain" aria-labelledby="nfl-title">
       <FieldBg />
@@ -102,7 +107,7 @@ const description = 'Projected NFL playoff game totals versus the Vegas line, fr
         <div class="nfl-hero__copy">
           <span class="kicker reveal"><span class="dot"></span> {round} <span class="nfl-hero__sep" aria-hidden="true">·</span> {roundDates}</span>
           <h1 id="nfl-title" class="reveal" style="--i:1">NFL Game Predictions</h1>
-          <p class="lead reveal" style="--i:2">A linear regression over team EPA, yardage and turnover features projects the total for each Divisional Round game and compares it with the sportsbook line. A call needs a 2-point edge; anything closer is a hold.</p>
+          <p class="lead reveal" style="--i:2">A linear regression over team EPA, yardage and turnover features projects the total for each Divisional Round game and compares it with the sportsbook line. A call needs a 2-point edge. Anything closer is a hold.</p>
           <p class="nfl-hero__source mono reveal" style="--i:3">Data from nflfastR <span aria-hidden="true">·</span> Vegas lines from The Odds API <span aria-hidden="true">·</span> generated {generated}</p>
           <div class="hero__actions reveal" style="--i:4">
             <a class="btn btn--primary" href={p.links[0].url}>Open the live dashboard <Icon name="arrow-up-right" class="arrow" size={16} /></a>
@@ -110,6 +115,7 @@ const description = 'Projected NFL playoff game totals versus the Vegas line, fr
             <button class="btn btn--soft" type="button" data-dialog-open="nfl-how"><Icon name="info" size={16} /> How it works</button>
           </div>
           <p class="nfl-hero__note small reveal" style="--i:5">This tab reads a snapshot of the dashboard's data files taken {snapshot}. The live site regenerates whenever the weekly pipeline runs.</p>
+          <DriveBar />
         </div>
 
         <aside class="slate reveal reveal--scale" style="--i:3" aria-labelledby="nfl-slate-title">
@@ -145,10 +151,12 @@ const description = 'Projected NFL playoff game totals versus the Vegas line, fr
       </div>
     </section>
 
+    <CaseTrio project={p} />
+
     <!-- 2. Summary and model performance -->
     <section class="section section--tight" id="nfl-summary" aria-labelledby="nfl-summary-title">
       <div class="container">
-        <SectionHead eyebrow="01 · Summary" title="Four games, two calls, one hold" id="nfl-summary-title" lead="What the model says about the Divisional Round, and how well the shipped fit describes the season it was trained on." />
+        <SectionHead num="01" eyebrow="Summary" title="Four games, two calls, one hold" id="nfl-summary-title" lead="What the model says about the Divisional Round, and how well the shipped fit describes the season it was trained on." />
         <div class="grid grid--4 nfl-sum">
           <div class="sum card reveal" style="--i:1">
             <Icon name="calendar" class="sum__ico" />
@@ -198,7 +206,7 @@ const description = 'Projected NFL playoff game totals versus the Vegas line, fr
     <!-- 3. Game cards -->
     <section class="section section--bordered" id="nfl-games" aria-labelledby="nfl-games-title">
       <div class="container">
-        <SectionHead eyebrow="02 · Divisional Round predictions" title="Every card the dashboard ships" id="nfl-games-title" lead="Projected points per team, each side's EPA per play, and the four tiles that turn a projection into a call. Offence is green when it adds points; defence is green when it takes them away." />
+        <SectionHead num="02" eyebrow="Divisional Round predictions" title="Every card the dashboard ships" id="nfl-games-title" lead="Projected points per team, each side's EPA per play, and the four tiles that turn a projection into a call. Offence is green when it adds points. Defence is green when it takes them away." />
         <div class="grid grid--2 nfl-games">
           {games.map((g, i) => <GameCard game={g} index={i} />)}
         </div>
@@ -215,7 +223,7 @@ const description = 'Projected NFL playoff game totals versus the Vegas line, fr
     <!-- 4. Charts -->
     <section class="section section--bordered" id="nfl-charts" aria-labelledby="nfl-charts-title">
       <div class="container">
-        <SectionHead eyebrow="03 · Model vs Vegas" title="Where the model disagrees, and by how much" id="nfl-charts-title" lead="The band around each Vegas line is the threshold a projection must clear to become a call. Move it and watch the calls change." />
+        <SectionHead num="03" eyebrow="Model vs Vegas" title="Where the model disagrees, and by how much" id="nfl-charts-title" lead="The band around each Vegas line is the threshold a projection must clear to become a call. Move it and watch the calls change." />
         <div class="grid grid--2 nfl-charts">
           <div class="chart-card reveal" style="--i:1">
             <div class="chart-card__head">
@@ -257,7 +265,7 @@ const description = 'Projected NFL playoff game totals versus the Vegas line, fr
     <!-- 5. Behind the numbers: dialogs -->
     <section class="section section--bordered" id="nfl-more" aria-labelledby="nfl-more-title">
       <div class="container">
-        <SectionHead eyebrow="04 · Behind the numbers" title="What feeds the model" id="nfl-more-title" />
+        <SectionHead num="04" eyebrow="Behind the numbers" title="What feeds the model" id="nfl-more-title" />
         <div class="callout nfl-injury reveal">
           <Icon name="info" class="nfl-injury__ico" />
           <div>
@@ -291,7 +299,7 @@ const description = 'Projected NFL playoff game totals versus the Vegas line, fr
     <!-- 6. Pipeline -->
     <section class="section section--bordered" id="nfl-pipeline" aria-labelledby="nfl-pipeline-title">
       <div class="container">
-        <SectionHead eyebrow="05 · Pipeline" title="Five numbered scripts, one weekly cycle" id="nfl-pipeline-title" lead="Each step writes a JSON file into public/data; the dashboard reads them at build time. The scheduler runs the first four in order and stops if the lines, the analysis or the model fail." />
+        <SectionHead num="05" eyebrow="Pipeline" title="Five numbered scripts, one weekly cycle" id="nfl-pipeline-title" lead="Each step writes a JSON file into public/data. The dashboard reads them at build time. The scheduler runs the first four in order and stops if the lines, the analysis or the model fail." />
         <div class="split nfl-pipe">
           <ol class="step-list reveal" role="list">
             <li class="step"><span class="step__num" aria-hidden="true"></span><div><h3>Fetch Vegas lines</h3><code class="step__file">fetch_via_odds_api.py</code><p>Pulls the weekend's totals from The Odds API (free tier, 500 requests a month) into <code>vegas_lines.json</code>. The snapshot's lines were fetched {linesFetched} for {nfl.vegas.gamesCount} games.</p></div></li>
@@ -325,7 +333,7 @@ const description = 'Projected NFL playoff game totals versus the Vegas line, fr
     <!-- 7. Historical validation -->
     <section class="section section--bordered" id="nfl-validation" aria-labelledby="nfl-validation-title">
       <div class="container">
-        <SectionHead eyebrow="06 · Validation" title="Two sets of numbers, and why both are shown" id="nfl-validation-title" lead="The dashboard reports the fit of a single season, scored in-sample. The historical model answers the harder question: how does the same approach do on games it never saw?" />
+        <SectionHead num="06" eyebrow="Validation" title="Two sets of numbers, and why both are shown" id="nfl-validation-title" lead="The dashboard reports the fit of a single season, scored in-sample. The historical model answers the harder question: how does the same approach do on games it never saw?" />
         <div class="grid grid--2 nfl-val">
           <div class="card nfl-val__card reveal" style="--i:1">
             <span class="eyebrow eyebrow--plain">Dashboard snapshot</span>

@@ -6,6 +6,8 @@
  * from the repository files named in DESIGN.md section 6.
  */
 import Base from '../../layouts/Base.astro';
+import CaseMeta from '../../components/CaseMeta.astro';
+import CaseTrio from '../../components/CaseTrio.astro';
 import Icon from '../../components/Icon.astro';
 import Dialog from '../../components/Dialog.astro';
 import SectionHead from '../../components/SectionHead.astro';
@@ -138,6 +140,8 @@ const flow = [
       </div>
     </div>
 
+    <CaseMeta project={p} index={2} />
+
     <!-- 1. Hero -->
     <section class="hero kx-hero grain" aria-labelledby="kx-title">
       <div class="hero__bg kx-hero__bg" aria-hidden="true">
@@ -149,7 +153,7 @@ const flow = [
           <span class="kicker reveal"><span class="dot"></span> Event study · Rust paper trader · {p.period}</span>
           <h1 id="kx-title" class="reveal" style="--i:1">Kalshi MLB Market Analysis</h1>
           <p class="lead reveal" style="--i:2">{p.oneLiner}</p>
-          <p class="kx-hero__sub reveal" style="--i:3">A pilot event study on the June 30 2026 slate measured how moneyline and totals prices moved around every plate appearance. The finding, momentum rather than overreaction, became the thesis for a Rust collector and paper trader that ran across the season.</p>
+          <p class="kx-hero__sub reveal" style="--i:3">A pilot study on the June 30 2026 slate measured how moneyline and totals prices moved around every plate appearance. The finding was momentum, not overreaction. That became the thesis for a Rust collector and paper trader that ran across the season.</p>
           <div class="kx-tiles reveal" style="--i:4">
             <div class="kx-tile"><span class="kx-tile__label">Games in the pilot</span><span class="kx-tile__value" data-count={K.pilot.games} data-format="int">{K.pilot.games}</span><span class="kx-tile__sub">Jun 30 2026, 1-minute candles</span></div>
             <div class="kx-tile"><span class="kx-tile__label">Plate-appearance events</span><span class="kx-tile__value" data-count={K.pilot.events} data-format="int">{K.pilot.events}</span><span class="kx-tile__sub">{K.pilot.scoringEvents} of them scoring plays</span></div>
@@ -183,10 +187,12 @@ const flow = [
       <GameTape games={K.games} finals={finals} />
     </section>
 
+    <CaseTrio project={p} />
+
     <!-- 2. How prices react -->
     <section class="section kx-sec" id="reactions">
       <div class="container">
-        <SectionHead eyebrow="01 · Event study" title="How prices react to a plate appearance" lead="Every one of the 455 plate appearances in the six games was aligned to the candle grid of its game's moneyline market. Signs are from the batting team's perspective: a positive number means the price moved toward the team that was hitting." />
+        <SectionHead num="01" eyebrow="Event study" title="How prices react to a plate appearance" lead="Every one of the 455 plate appearances in the six games was lined up with its game's one-minute candles. Signs follow the batting team: positive means the price moved toward the team at bat." />
         <div class="table-wrap reveal">
           <table class="table kx-table">
             <thead><tr><th>Event</th><th class="num">n</th><th class="num">Immediate, 0 to 2 min</th><th class="num">Drift, 2 to 7 min</th><th class="num">Volume spike</th><th class="num">Totals market, immediate</th><th class="num">p</th></tr></thead>
@@ -226,7 +232,7 @@ const flow = [
     <!-- 3. Reaction path -->
     <section class="section section--bordered kx-sec kx-sec--sunk" id="path">
       <div class="container">
-        <SectionHead eyebrow="02 · Minute by minute" title="The reaction path" lead="The average price path around each kind of play, from three minutes before to eight minutes after. Minute 0 is the first candle boundary after the play ends; the baseline is the candle two minutes earlier, so every path passes through zero at −2." />
+        <SectionHead num="02" eyebrow="Minute by minute" title="The reaction path" lead="The average price path around each kind of play, from three minutes before to eight minutes after. Minute 0 is the first candle boundary after the play ends. The baseline is the candle two minutes earlier, so every path passes through zero at −2." />
         <div class="chart-card reveal" id="kx-reaction">
           <div class="chart-card__head">
             <span class="chart-card__title">Average change in the batting team's price</span>
@@ -252,7 +258,7 @@ const flow = [
     <!-- 4. Momentum, not overreaction -->
     <section class="section section--bordered kx-sec" id="momentum">
       <div class="container">
-        <SectionHead eyebrow="03 · The finding" title="Momentum, not overreaction" lead="The classic trade in a market that jumps on news is to fade the jump. Here that trade loses. On the big moves, the immediate reaction and the drift after it point the same way." />
+        <SectionHead num="03" eyebrow="The finding" title="Momentum, not overreaction" lead="The classic trade in a market that jumps on news is to fade the jump. Here that trade loses. On the big moves, the immediate reaction and the drift after it point the same way." />
         <div class="kx-split kx-split--mo" id="kx-momentum">
           <div class="chart-card kx-tip-host reveal" style="--i:1">
             <div class="chart-card__head">
@@ -296,7 +302,7 @@ const flow = [
     <!-- 5. Speed and leverage -->
     <section class="section section--bordered kx-sec kx-sec--sunk" id="speed">
       <div class="container">
-        <SectionHead eyebrow="04 · Speed and leverage" title="A narrow window, and a deep enough book" lead="The reaction is fast, strongest early in the game, and happens in a market that is liquid enough to trade at a one-cent spread." />
+        <SectionHead num="04" eyebrow="Speed and leverage" title="A narrow window, and a deep enough book" lead="The reaction is fast, strongest early in the game, and happens in a market that is liquid enough to trade at a one-cent spread." />
         <div class="grid grid--3 kx-speed">
           <div class="card reveal" style="--i:1">
             <span class="kx-kv__k">Reaction speed</span>
@@ -329,7 +335,7 @@ const flow = [
     <!-- 6. Caveats -->
     <section class="section section--bordered kx-sec" id="caveats">
       <div class="container">
-        <SectionHead eyebrow="05 · Caveats" title="What the pilot cannot tell you" lead="REPORT.md lists its own limits before its next steps. They are the reason the project did not stop at the finding." />
+        <SectionHead num="05" eyebrow="Caveats" title="What the pilot cannot tell you" lead="REPORT.md lists its own limits before its next steps. They are the reason the project did not stop at the finding." />
         <div class="grid grid--2 kx-caveats">
           <div class="card kx-caveat reveal" style="--i:1"><Icon name="calendar" /><div><b>One slate.</b><p>One day and six games. The result needed the full-season pass before anyone should trust it, which is what the collector was built to provide.</p></div></div>
           <div class="card kx-caveat reveal" style="--i:2"><Icon name="clock" /><div><b>Timestamps leak.</b><p>The MLB endTime stamp lags the decisive moment by 30 to 60 seconds (a home run is known before the play officially ends), so part of the reaction lands in the "pre" candle and the measured magnitudes understate the truth. One eighth-inning home run even sign-flipped.</p></div></div>
@@ -342,7 +348,7 @@ const flow = [
     <!-- 7. From study to system -->
     <section class="section section--bordered kx-sec kx-sec--sunk" id="system">
       <div class="container">
-        <SectionHead eyebrow="06 · From study to system" title="A Rust workspace to collect the season and trade it on paper" lead="Three crates, about 2,300 lines of Rust, with about 1,300 lines of Python for the research and the dashboard. The trader simulates fills against live order books and never places an order." />
+        <SectionHead num="06" eyebrow="From study to system" title="A Rust workspace to collect the season and trade it on paper" lead="Three crates, about 2,300 lines of Rust, plus about 1,300 lines of Python for the research and the dashboard. The trader simulates fills against live order books and never places an order." />
         <div class="kx-flow" aria-label="Pipeline">
           {flow.map((row, ri) => (
             <>
@@ -370,7 +376,7 @@ const flow = [
       <div class="container">
         <div class="kx-split kx-split--honest">
           <div>
-            <SectionHead eyebrow="07 · Research honesty" title="Edges that were rejected" lead="Every strategy change was gated on either the 882-game backtest or live trade-pattern analysis, and the audits that said no are kept alongside the ones that worked." />
+            <SectionHead num="07" eyebrow="Research honesty" title="Edges that were rejected" lead="Every strategy change had to pass the 882-game backtest or live trade-pattern analysis. The audits that said no are kept next to the ones that worked." />
             <div class="stack" style="--stack:12px">
               <div class="card card--sunk kx-note reveal" style="--i:1"><Icon name="search" /><div><b>The survivorship-bias audit invalidated the original edge.</b><p>The season backtest in wp_model.py includes an audit for survivorship bias. It showed the project's original event-drift strategy, the one the pilot suggested, did not hold up. It was dropped rather than tuned until it passed.</p></div></div>
               <div class="card card--sunk kx-note reveal" style="--i:2"><Icon name="close" /><div><b>Recency and streak weighting were rejected.</b><p>Both were proposed as improvements to the ratings. The data said no, and they are not in the engine.</p></div></div>
@@ -461,6 +467,7 @@ DELETE /trade-api/v2/portfolio/orders/&#123;order_id&#125;</code></pre>
   </Dialog>
 
   <script src="../../scripts/kalshi-page.ts"></script>
+  <script src="../../scripts/kalshi-runners.ts"></script>
 </Base>
 
 <style is:global>
